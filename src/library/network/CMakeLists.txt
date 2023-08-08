@@ -1,0 +1,29 @@
+add_library(network
+    ./network.cpp
+    ./socket/socket_id.cpp
+    ./ip/socket_address.cpp
+    ./ip/port_id.cpp
+    ./socket/active_socket.cpp
+    ./socket/passive_socket.cpp
+    ./polling/poller.cpp
+    ./polling/poller_registration.cpp
+    ./network_interface/network_interface.cpp
+    ./socket/private/socket_base_impl.cpp
+    ./socket/private/passive_socket_impl.cpp
+    ./socket/private/active_socket_impl.cpp
+)
+
+target_link_libraries(network 
+PUBLIC
+    fmt::fmt
+    include
+    system
+    )
+
+target_include_directories(network
+    PUBLIC
+        ${_include_dir}/src
+        ${_system_dir}/src
+        ${_network_dir}/src
+        ${_fmt_src_path}/include
+)

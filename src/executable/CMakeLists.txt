@@ -1,0 +1,6 @@
+if (NETWORK_BUILD_DEMO)
+    add_subdirectory(tcp_demo)
+    add_subdirectory(echo_server_demo)
+    add_subdirectory(multicast_demo)
+    add_subdirectory(udp_demo)
+endif()

@@ -66,7 +66,7 @@ namespace bcpp::network
 
         system::file_descriptor const & get_file_descriptor() const noexcept;
         
-        socket_address get_ip_address() const noexcept;
+        socket_address get_socket_address() const noexcept;
 
         socket_id get_id() const noexcept;
 

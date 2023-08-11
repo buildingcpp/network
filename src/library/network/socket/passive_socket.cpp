@@ -46,11 +46,11 @@ bool bcpp::network::passive_socket::is_valid
 
 
 //=============================================================================
-auto bcpp::network::passive_socket::get_ip_address
+auto bcpp::network::passive_socket::get_socket_address
 (
 ) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_ip_address() : socket_address{};
+    return (impl_) ? impl_->get_socket_address() : socket_address{};
 }
 
 

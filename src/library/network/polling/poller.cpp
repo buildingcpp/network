@@ -57,8 +57,18 @@ void bcpp::network::poller::poll
 (
 )
 {
+    return poll(std::chrono::milliseconds(0)); 
+}
+
+
+//=============================================================================
+void bcpp::network::poller::poll
+(
+    std::chrono::milliseconds duration
+)
+{
     std::array<::epoll_event, 1024> epollEvents;
-    for (auto const & event : std::span(epollEvents.data(), ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), 0)))
+    for (auto const & event : std::span(epollEvents.data(), ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), duration.count())))
     {
         auto impl = reinterpret_cast<socket_base_impl *>(event.data.ptr);
         if (event.events & EPOLLERR)

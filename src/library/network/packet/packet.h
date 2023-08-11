@@ -64,13 +64,15 @@ namespace bcpp::network
             std::size_t
         );
 
+        operator std::span<element_type const>() const;
+
     private:
 
         void release();
 
         std::span<element_type>  buffer_;
 
-        delete_handler  deleteHandler_;
+        delete_handler  deleteHandler_{nullptr};
 
         std::size_t     size_{0};
 
@@ -100,7 +102,7 @@ inline bcpp::network::packet::packet
     deleteHandler_(other.deleteHandler_),
     size_(other.size_)
 {
-    other.deleteHandler_ = {};
+    other.deleteHandler_ = nullptr;
     other.size_ = {};
     other.buffer_ = {};
 }
@@ -119,7 +121,7 @@ inline auto bcpp::network::packet::operator =
         deleteHandler_ = other.deleteHandler_;
         size_ = other.size_;
 
-        other.deleteHandler_ = {};
+        other.deleteHandler_ = nullptr;
         other.size_ = {};
         other.buffer_ = {};
     }
@@ -239,4 +241,13 @@ inline void bcpp::network::packet::release
         std::exchange(deleteHandler_, nullptr)(*this);
     size_ = {};
     buffer_ = {};
+}
+
+
+//=============================================================================
+inline bcpp::network::packet::operator std::span<element_type const>
+(
+) const
+{
+    return buffer_;
 }

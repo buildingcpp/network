@@ -11,6 +11,7 @@ namespace
     static auto constexpr max_tcp_read_buffer_size = ((1ul << 10) * 64);
     static auto constexpr default_tcp_read_buffer_size = ((1ul << 10) * 4);
     static auto constexpr default_udp_read_buffer_size = ((1ul << 10) * 2);
+            
 }
 
 
@@ -32,16 +33,18 @@ bcpp::network::active_socket_impl<P>::socket_impl
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto desiredSize)
-            {
-                auto alloc = new char[desiredSize];
-                return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {alloc, desiredSize});
-            })
+            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
 {
     if constexpr (tcp_protocol_concept<P>)
         readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
     if constexpr (udp_protocol_concept<P>)
+    {
         readBufferSize_ = default_udp_read_buffer_size;
+        if (config.multicastTtl_)
+            set_socket_option(IPPROTO_IP, IP_MULTICAST_TTL, config.multicastTtl_);
+        if (config.ttl_)
+            set_socket_option(IPPROTO_IP, IP_TTL, config.ttl_);
+    }
 
     if (config.socketReceiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.socketReceiveBufferSize_);
@@ -61,7 +64,7 @@ bcpp::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-) :
+) requires (tcp_protocol_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
@@ -69,20 +72,10 @@ bcpp::network::active_socket_impl<P>::socket_impl
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto desiredSize)
-            {
-                auto alloc = new char[desiredSize];
-                return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {alloc, desiredSize});
-            })  
+            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
 {
-    if constexpr (tcp_protocol_concept<P>)
-    {
-        readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
-        peerSocketAddress_ = get_peer_name();
-    }
-    if constexpr (udp_protocol_concept<P>)
-        readBufferSize_ = default_udp_read_buffer_size;
-
+    readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
+    peerSocketAddress_ = get_peer_name();
     if (config.socketReceiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.socketReceiveBufferSize_);
     if (config.socketSendBufferSize_ > 0)
@@ -112,8 +105,6 @@ auto bcpp::network::active_socket_impl<P>::connect_to
     if ((result != 0) && (errno != EINPROGRESS))
         return connect_result::connect_error;
     peerSocketAddress_ = destination;
-
-    set_socket_option(IPPROTO_IP, IP_MULTICAST_TTL, 8);
     return connect_result::success;
 }
 
@@ -294,6 +285,9 @@ void bcpp::network::active_socket_impl<P>::receive
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
             receiveErrorHandler_(id_, errno);
+        else
+            ;// TODO: there was no reason to allocate the packet in the first place
+            // when allocators are added this will be a trivial issue.
     }
 }
 
@@ -336,7 +330,7 @@ bool bcpp::network::active_socket_impl<P>::is_connected
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket_impl<P>::get_peer_ip_address
+auto bcpp::network::active_socket_impl<P>::get_peer_socket_address
 (
 ) const noexcept -> socket_address
 {

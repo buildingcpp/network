@@ -8,6 +8,7 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 
 namespace bcpp::network
@@ -48,6 +49,11 @@ namespace bcpp::network
         );
 
         void poll();
+
+        void poll
+        (
+            std::chrono::milliseconds
+        );
         
         void close();
 

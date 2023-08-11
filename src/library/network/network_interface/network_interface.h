@@ -93,7 +93,7 @@ namespace bcpp::network
             udp_socket::event_handlers
         );
 
-        template <socket_concept P, typename T, typename B = default_buffer_type>
+        template <socket_concept P, typename T>
         stream<P> open_stream
         (
             T && socketHandle,
@@ -101,12 +101,22 @@ namespace bcpp::network
             typename P::event_handlers eventHandlers
         )
         {
-            return stream<P, B>(open_socket<P>(socketHandle, config, eventHandlers), workContractGroup_);
+            return stream<P>(open_socket<P>(socketHandle, config, eventHandlers), workContractGroup_);
         }
 
         void poll();
 
+        void poll
+        (
+            std::chrono::milliseconds
+        );
+
         void service_sockets();
+
+        void service_sockets
+        (
+            std::chrono::nanoseconds
+        );
 
         void stop();
         

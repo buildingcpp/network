@@ -175,7 +175,7 @@ auto bcpp::network::socket_base_impl::get_file_descriptor
 
 
 //=============================================================================
-auto bcpp::network::socket_base_impl::get_ip_address
+auto bcpp::network::socket_base_impl::get_socket_address
 (
 ) const noexcept -> socket_address
 {

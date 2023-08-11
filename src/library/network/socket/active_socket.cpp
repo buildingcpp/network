@@ -164,11 +164,11 @@ bool bcpp::network::active_socket<P>::is_valid
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket<P>::get_ip_address
+auto bcpp::network::active_socket<P>::get_socket_address
 (
 ) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_ip_address() : socket_address{};
+    return (impl_) ? impl_->get_socket_address() : socket_address{};
 }
 
 
@@ -184,11 +184,11 @@ bool bcpp::network::active_socket<P>::is_connected
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket<P>::get_peer_ip_address
+auto bcpp::network::active_socket<P>::get_peer_socket_address
 (
 ) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_peer_ip_address() : socket_address{};
+    return (impl_) ? impl_->get_peer_socket_address() : socket_address{};
 }
 
 

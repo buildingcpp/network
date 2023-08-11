@@ -44,6 +44,10 @@ namespace bcpp::network
             std::size_t     socketSendBufferSize_{0};
             std::size_t     readBufferSize_{0};
             system::io_mode ioMode_{system::io_mode::read_write};
+
+            // udp specific
+            std::uint32_t   ttl_{0};
+            std::uint32_t   multicastTtl_{0};
         };
 
         socket_impl
@@ -62,7 +66,7 @@ namespace bcpp::network
             event_handlers const &,
             system::work_contract_group &,
             poller &
-        );
+        ) requires (tcp_protocol_concept<P>);
 
         virtual ~socket_impl() = default;
 
@@ -95,7 +99,7 @@ namespace bcpp::network
 
         bool is_connected() const noexcept;
 
-        socket_address get_peer_ip_address() const noexcept;
+        socket_address get_peer_socket_address() const noexcept;
 
         connect_result join
         (

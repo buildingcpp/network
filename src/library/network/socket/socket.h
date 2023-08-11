@@ -18,6 +18,11 @@ namespace bcpp::network
     template <typename T>
     concept socket_concept = std::is_same_v<T, socket<typename T::traits>>;
 
+    template <typename T>
+    concept udp_socket_concept = std::is_same_v<T, socket<udp_socket_traits>>;
+
+    template <typename T>
+    concept tcp_socket_concept = std::is_same_v<T, socket<tcp_socket_traits>>;
 
     //=========================================================================
     // concept for any socket implementation

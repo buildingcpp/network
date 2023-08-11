@@ -6,7 +6,7 @@ bcpp::network::network_interface::network_interface
 (
 ):
     poller_(std::make_shared<poller>(poller::configuration{})),
-    workContractGroup_({default_capacity}, {.alertHandler_ = [this](auto const &){conditionVariable_.notify_one();}})
+    workContractGroup_(default_capacity)
 {
 }
 
@@ -17,7 +17,7 @@ bcpp::network::network_interface::network_interface
     configuration const & config
 ):
     poller_(std::make_shared<poller>(config.poller_)),
-    workContractGroup_({config.capacity_}, {.alertHandler_ = [this](auto const &){conditionVariable_.notify_one();}})
+    workContractGroup_(config.capacity_)
 {
 }
 
@@ -46,14 +46,10 @@ void bcpp::network::network_interface::stop
     if (wasRunning)
     {
         workContractGroup_.stop();
-        conditionVariable_.notify_all();
         // any work contracts that were surrendered in the previous step must not be 
         // serviced to complete the async close and destroy (the impl) of any existing sockets.
         while (workContractGroup_.get_active_contract_count())
-        {
-            conditionVariable_.notify_all();
             service_sockets();
-        }
     }
 }
 
@@ -155,6 +151,16 @@ auto bcpp::network::network_interface::multicast_join
 //=============================================================================
 void bcpp::network::network_interface::poll
 (
+    std::chrono::milliseconds duration
+)
+{
+    poller_->poll(duration);
+}
+
+
+//=============================================================================
+void bcpp::network::network_interface::poll
+(
 )
 {
     poller_->poll();
@@ -164,13 +170,18 @@ void bcpp::network::network_interface::poll
 //=============================================================================
 void bcpp::network::network_interface::service_sockets
 (
+    std::chrono::nanoseconds duration
 )
 {
-    if (workContractGroup_.get_active_contract_count() == 0)
-    {
-        std::unique_lock uniqueLock(mutex_);
-        conditionVariable_.wait(uniqueLock, [this](){return ((workContractGroup_.get_active_contract_count() > 0) || (stopped_));});
-    }
+    workContractGroup_.execute_next_contract();
+}
+
+
+//=============================================================================
+void bcpp::network::network_interface::service_sockets
+(
+)
+{
     workContractGroup_.execute_next_contract();
 }
 

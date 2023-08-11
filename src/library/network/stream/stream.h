@@ -1,6 +1,8 @@
 #pragma once
 
-#include <library/network/socket/socket.h>
+#include <library/network/ip/socket_address.h>
+#include <library/network/packet/packet.h>
+#include <library/network/socket/active_socket.h>
 #include <library/system.h>
 
 #include <deque>
@@ -12,97 +14,94 @@
 namespace bcpp::network
 {
 
-    // quick proof of concept for async send 
-    // by wrapping socket with 'stream' class
-
-    class default_buffer_type
-    {
-    public:
-        default_buffer_type() = default;
-        default_buffer_type(std::span<char const> data):data_(data.begin(), data.end()){}
-        auto begin() const{return data_.begin();}
-        auto end() const{return data_.end();}
-        auto size() const{return data_.size();}
-        auto empty() const{return data_.empty();}
-        operator std::span<char const>()const{return data_;}
-    private:
-        std::vector<char> data_;
-    };
-
-
-    template <socket_concept S, typename B = default_buffer_type>
+    template <socket_concept S>
     class stream
     {
     public:
 
         using socket_type = S;
-        using buffer_type = B;
+        static auto constexpr is_tcp = tcp_socket_concept<S>;
+        static auto constexpr is_udp = udp_socket_concept<S>;
+
+        struct packet_type
+        {
+            packet          packet_;
+            socket_address  destination_;
+        };
 
         stream
         (
-            socket_type socket,
-            system::work_contract_group & workContractGroup
-        ):
-            socket_(std::move(socket)),
-            workContract_(workContractGroup.create_contract([this](){this->send();}))
-        {
-        }
+            socket_type,
+            system::work_contract_group &
+        );
 
-        template <typename T>
         void send
         (
-            T && data
-        )
-        {
-            std::lock_guard lockGuard(mutex_);
-            buffers_.emplace_back(std::forward<T>(data));
-            workContract_.invoke();
-        }
+            packet
+        );
+
+        void send_to
+        (
+            socket_address,
+            packet
+        ) requires (is_udp);
 
         connect_result connect_to
         (
-            socket_address const & destination
-        ) noexcept
-        {
-            return socket_.connect_to(destination);
-        }
+            socket_address const &
+        ) noexcept;
 
-        bool close(){return socket_.close();}
+        bool close();
 
-        bool is_valid() const noexcept{return socket_.is_valid();}
+        bool is_valid() const noexcept;
 
-        socket_address get_ip_address() const noexcept{return socket_.get_ip_address();}
+        socket_address get_socket_address() const noexcept;
 
-        bool is_connected() const noexcept{return socket_.is_connected();}
+        bool is_connected() const noexcept;
 
-        socket_address get_connected_ip_address() const noexcept{return socket_.get_connected_ip_address();}
-
+        socket_address get_peer_socket_address() const noexcept;
 
     private:
 
-        void send
-        (
-        )
-        {
-            std::lock_guard lockGuard(mutex_);
-            if (!buffers_.empty())
-            {
-                auto const & buffer = buffers_.front();
-                socket_.send(buffer);
-                buffers_.pop_front();
-                if (!buffers_.empty())
-                    workContract_.invoke();
-            }
-        }
+        void send();
 
         socket_type                     socket_;
         system::work_contract           workContract_;
-        std::deque<buffer_type>         buffers_;
+        std::deque<packet_type>         packets_;
         std::mutex mutable              mutex_;
-    };
+    }; // class stream<>
 
 
     using tcp_stream = stream<tcp_socket>;
     using udp_stream = stream<udp_socket>;
 
 } // bcpp::network
+
+
+//=============================================================================
+template <bcpp::network::socket_concept S>
+inline void bcpp::network::stream<S>::send
+(
+)
+{
+    std::lock_guard lockGuard(mutex_);
+    if (!packets_.empty())
+    {
+        auto && [packet, destinationSocketAddress] = packets_.front();
+
+        if constexpr (is_tcp)
+        {
+            // TODO: handle partial sends
+            socket_.send(packet);
+        }
+        if constexpr (is_udp)
+        {
+            // TODO: handle send failure
+            socket_.send_to(destinationSocketAddress, packet);
+        }
+        packets_.pop_front();
+        if (!packets_.empty())
+            workContract_.invoke();
+    }
+}
+

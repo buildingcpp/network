@@ -34,7 +34,7 @@ int main
     auto sender = networkInterface.udp_connect({loop_back, port_id_any}, "239.0.0.1:3000", {}, {});
 
     // set up receivers
-    static auto constexpr number_of_receivers = 1;
+    static auto constexpr number_of_receivers = 10;
     std::array<udp_socket, number_of_receivers> receivers;
     auto receiverId = 0;
     for (auto & receiver : receivers)

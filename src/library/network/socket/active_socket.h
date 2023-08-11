@@ -112,11 +112,11 @@ namespace bcpp::network
 
         bool is_valid() const noexcept;
 
-        socket_address get_ip_address() const noexcept;
+        socket_address get_socket_address() const noexcept;
 
         bool is_connected() const noexcept;
 
-        socket_address get_peer_ip_address() const noexcept;
+        socket_address get_peer_socket_address() const noexcept;
 
         socket_id get_id() const;
         

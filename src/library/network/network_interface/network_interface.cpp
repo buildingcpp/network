@@ -173,7 +173,7 @@ void bcpp::network::network_interface::service_sockets
     std::chrono::nanoseconds duration
 )
 {
-    workContractGroup_.execute_next_contract();
+    workContractGroup_.execute_next_contract(duration);
 }
 
 

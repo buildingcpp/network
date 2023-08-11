@@ -19,7 +19,7 @@ int main
     // one thread to continually poll the network interface for events
     std::jthread pollerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.poll();});
     // one worker thread to service any sockets which have data to receive
-    std::jthread workerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets();});
+    std::jthread workerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets(std::chrono::seconds(1));});
 
     // create a standard (connectionless) UDP socket
     auto socket1 = networkInterface.udp_connectionless({loop_back, port_id_any}, {/*default configuration for this demo*/}, 

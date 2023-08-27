@@ -68,7 +68,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::work_contract_group &,
+            system::non_blocking_work_contract_group &,
             poller &
         ) requires (udp_protocol_concept<P>);
 
@@ -77,7 +77,7 @@ namespace bcpp::network
             ip_address,
             configuration const &,
             event_handlers const &,
-            system::work_contract_group &,
+            system::non_blocking_work_contract_group &,
             poller &
         ) requires (tcp_protocol_concept<P>);
 
@@ -86,7 +86,7 @@ namespace bcpp::network
             system::file_descriptor,
             configuration const &,
             event_handlers const &,
-            system::work_contract_group &,
+            system::non_blocking_work_contract_group &,
             poller &
         ) requires (tcp_protocol_concept<P>);
 

@@ -48,8 +48,8 @@ void bcpp::network::network_interface::stop
         workContractGroup_.stop();
         // any work contracts that were surrendered in the previous step must not be 
         // serviced to complete the async close and destroy (the impl) of any existing sockets.
-        while (workContractGroup_.get_active_contract_count())
-            service_sockets();
+    //    while (workContractGroup_.get_active_contract_count())
+    //        service_sockets();
     }
 }
 
@@ -173,7 +173,7 @@ void bcpp::network::network_interface::service_sockets
     std::chrono::nanoseconds duration
 )
 {
-    workContractGroup_.execute_next_contract(duration);
+    workContractGroup_.execute_next_contract(); // TODO: need to restore blocking mode ... duration);
 }
 
 

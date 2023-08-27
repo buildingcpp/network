@@ -21,7 +21,7 @@ namespace bcpp::network
     {
     public:
 
-        using value_type = std::uint32_t;
+        using value_type = ::in_addr;
 
         ip_address() noexcept = default;
         ip_address(ip_address const &) noexcept = default;
@@ -40,17 +40,10 @@ namespace bcpp::network
             std::string const &
         ) noexcept;
 
-        explicit constexpr ip_address
-        (
-            value_type
-        ) noexcept;
-
-        explicit constexpr ip_address
+        constexpr ip_address
         (
             ::in_addr
         ) noexcept;
-        
-        value_type get() const noexcept;
 
         bool is_valid() const noexcept;
 
@@ -65,23 +58,13 @@ namespace bcpp::network
 
 
     //=========================================================================
-    static ip_address byte_swap
-    (
-        ip_address source
-    ) 
-    {
-        return ip_address(bcpp::byte_swap(source.get()));
-    }
-
-
-    //=========================================================================
     static std::string to_string
     (
         ip_address ipAddress
     )
     {
-        auto value = ipAddress.get();
-        auto p = reinterpret_cast<std::uint8_t const *>(&value);
+        ::in_addr value = ipAddress;
+        auto p = reinterpret_cast<std::uint8_t const *>(&value.s_addr);
         return fmt::format("{}.{}.{}.{}", p[3], p[2], p[1], p[0]);       
     }
 
@@ -103,19 +86,9 @@ static std::ostream & operator <<
 //=============================================================================
 constexpr bcpp::network::ip_address::ip_address
 (
-    std::uint32_t value
-) noexcept :
-    value_(value)
-{
-}
-
-
-//=============================================================================
-constexpr bcpp::network::ip_address::ip_address
-(
     ::in_addr inAddr
 ) noexcept :
-    value_(endian_swap<std::endian::big, std::endian::native>(inAddr.s_addr))
+    value_(inAddr.s_addr)
 {
 }
 
@@ -125,7 +98,7 @@ inline bcpp::network::ip_address::ip_address
 (
     std::string const & value
 ) noexcept :
-    ip_address(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value.data())))
+    ip_address(::in_addr{::inet_addr(value.data())})
 {
 }
 
@@ -136,17 +109,8 @@ inline bcpp::network::ip_address::ip_address
 ( 
     char const (&value)[N]
 ) noexcept:
-    ip_address(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value)))
+    ip_address(::in_addr{::inet_addr(value.data())})
 {
-}
-
-
-//=============================================================================
-inline std::uint32_t bcpp::network::ip_address::get
-(
-) const noexcept
-{
-    return value_;
 }
 
 
@@ -155,8 +119,8 @@ inline bool bcpp::network::ip_address::is_multicast
 (
 ) const noexcept
 {
-    static auto constexpr mask = 0xe0000000ul;
-    return ((value_ & mask) == mask);  
+    static auto constexpr mask = 0x000000e0ul;
+    return ((value_.s_addr & mask) == mask);  
 }
 
 
@@ -165,7 +129,7 @@ inline bool bcpp::network::ip_address::is_valid
 (
 ) const noexcept
 {
-    return (value_ != 0);
+    return (value_.s_addr != 0);
 }
 
 
@@ -174,14 +138,14 @@ inline bcpp::network::ip_address::operator ::in_addr
 (
 ) const noexcept
 {
-    return {.s_addr = endian_swap<std::endian::native, std::endian::big>(value_)};
+    return value_;
 }
 
 
 //=============================================================================
 namespace bcpp::network
 {
-    static ip_address constexpr local_host{INADDR_LOOPBACK};
-    static ip_address constexpr loop_back{INADDR_LOOPBACK};
-    static ip_address constexpr in_addr_any{INADDR_ANY};
+    static ip_address constexpr local_host{::in_addr(byte_swap(INADDR_LOOPBACK))};
+    static ip_address constexpr loop_back{::in_addr(byte_swap(INADDR_LOOPBACK))};
+    static ip_address constexpr in_addr_any{::in_addr(byte_swap(INADDR_ANY))};
 }

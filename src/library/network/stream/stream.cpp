@@ -6,7 +6,7 @@ template <bcpp::network::socket_concept S>
 bcpp::network::stream<S>::stream
 (
     socket_type socket,
-    system::work_contract_group & workContractGroup
+    system::non_blocking_work_contract_group & workContractGroup
 ):
     socket_(std::move(socket)),
     workContract_(workContractGroup.create_contract([this](){this->send();}))

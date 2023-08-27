@@ -8,7 +8,7 @@ bcpp::network::passive_socket::socket
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::work_contract_group & workContractGroup,
+    system::non_blocking_work_contract_group & workContractGroup,
     poller & p
 )
 {

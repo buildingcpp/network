@@ -123,7 +123,7 @@ namespace bcpp::network
     private:
 
         std::shared_ptr<poller>     poller_;
-        system::work_contract_group workContractGroup_;
+        system::non_blocking_work_contract_group workContractGroup_;
 
         std::mutex mutable          mutex_;
         std::condition_variable     conditionVariable_;

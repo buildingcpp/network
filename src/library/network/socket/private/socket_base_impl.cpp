@@ -22,7 +22,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
-    system::work_contract workContract
+    system::non_blocking_work_contract workContract
 ) try :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
@@ -57,7 +57,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
-    system::work_contract workContract
+    system::non_blocking_work_contract workContract
 ) try :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),

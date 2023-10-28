@@ -36,7 +36,7 @@ void bcpp::network::network_interface::stop
 (
 )
 {
-    // stop the work contract group.  this will surrender each of the work contracts 
+    // stop the work contract group.  this will release each of the work contracts 
     // that are associated with the sockets that were created by this network interface.
     bool wasRunning = false;
     {
@@ -48,8 +48,8 @@ void bcpp::network::network_interface::stop
         workContractGroup_.stop();
         // any work contracts that were surrendered in the previous step must not be 
         // serviced to complete the async close and destroy (the impl) of any existing sockets.
-    //    while (workContractGroup_.get_active_contract_count())
-    //        service_sockets();
+       // while (workContractGroup_.get_active_contract_count())
+        //    service_sockets();
     }
 }
 

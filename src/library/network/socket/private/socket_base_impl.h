@@ -46,7 +46,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            system::non_blocking_work_contract
+            system::blocking_work_contract
         );
 
         socket_base_impl
@@ -55,7 +55,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            system::non_blocking_work_contract
+            system::blocking_work_contract
         );
 
         virtual ~socket_base_impl();
@@ -121,7 +121,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        system::non_blocking_work_contract               workContract_;
+        system::blocking_work_contract               workContract_;
 
     }; // class socket_base_impl
 

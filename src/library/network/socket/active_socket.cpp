@@ -9,7 +9,7 @@ bcpp::network::active_socket<P>::socket
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::non_blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & workContractGroup,
     poller & p
 ) requires (udp_protocol_concept<P>)
 {
@@ -40,7 +40,7 @@ bcpp::network::active_socket<P>::socket
     ip_address ipAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::non_blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & workContractGroup,
     poller & p
 ) requires (tcp_protocol_concept<P>)
 {
@@ -71,7 +71,7 @@ bcpp::network::active_socket<P>::socket
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::non_blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & workContractGroup,
     poller & p
 ) requires (tcp_protocol_concept<P>)
 {

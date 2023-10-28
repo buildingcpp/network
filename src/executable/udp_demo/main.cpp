@@ -18,6 +18,7 @@ int main
     // create two threads (we could do test with one)
     // one thread to continually poll the network interface for events
     std::jthread pollerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.poll();});
+
     // one worker thread to service any sockets which have data to receive
     std::jthread workerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets(std::chrono::seconds(1));});
 
@@ -25,8 +26,6 @@ int main
     auto socket1 = networkInterface.udp_connectionless({loop_back, port_id_any}, {/*default configuration for this demo*/}, 
             {.receiveHandler_ = [](auto socketId, auto packet, auto senderSocketAddress){std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress <<
             ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";}});
-    
-
 
     // this socket will actually be using the 'stream' rather than the 'socket'
     // streams are still a work in progress but allow for asynchronous send.

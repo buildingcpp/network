@@ -57,7 +57,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::non_blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             poller &
         );
 

@@ -32,7 +32,7 @@ namespace bcpp::network
         stream
         (
             socket_type,
-            system::non_blocking_work_contract_group &
+            system::blocking_work_contract_group &
         );
 
         void send
@@ -66,7 +66,7 @@ namespace bcpp::network
         void send();
 
         socket_type                     socket_;
-        system::non_blocking_work_contract           workContract_;
+        system::blocking_work_contract           workContract_;
         std::deque<packet_type>         packets_;
         std::mutex mutable              mutex_;
     }; // class stream<>
@@ -101,7 +101,7 @@ inline void bcpp::network::stream<S>::send
         }
         packets_.pop_front();
         if (!packets_.empty())
-            workContract_.invoke();
+            workContract_.schedule();
     }
 }
 

@@ -6,7 +6,7 @@ template <bcpp::network::socket_concept S>
 bcpp::network::stream<S>::stream
 (
     socket_type socket,
-    system::non_blocking_work_contract_group & workContractGroup
+    system::blocking_work_contract_group & workContractGroup
 ):
     socket_(std::move(socket)),
     workContract_(workContractGroup.create_contract([this](){this->send();}))
@@ -23,7 +23,7 @@ void bcpp::network::stream<S>::send
 {
     std::lock_guard lockGuard(mutex_);
     packets_.emplace_back(std::move(b), socket_.get_peer_socket_address());
-    workContract_.invoke();
+    workContract_.schedule();
 }
 
 
@@ -37,7 +37,7 @@ void bcpp::network::stream<S>::send_to
 {
     std::lock_guard lockGuard(mutex_);
     packets_.emplace_back(std::move(b), socketAddress);
-    workContract_.invoke();
+    workContract_.schedule();
 }
 
 

@@ -27,9 +27,9 @@ endif()
 
 include("./scripts/fetch_dependencies.cmake")
 
-fetch_dependency("https://github.com/fmtlib/fmt.git;5f774c0aed4af6494b412cd3883e0f09295bd79d")
+fetch_dependency("https://github.com/fmtlib/fmt.git;")
 fetch_dependency("https://github.com/buildingcpp/include.git;main")
-fetch_dependency("https://github.com/buildingcpp/system.git;temp/terminology_change")
+fetch_dependency("https://github.com/buildingcpp/system.git;main")
 
 message("Build Type = ${CMAKE_BUILD_TYPE}")
 

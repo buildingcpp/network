@@ -29,7 +29,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
     workContract_(std::move(workContract))
 {
-    if (auto success = set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1); !success)
+    if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
         throw socket_option_exception("reuse address failure");
     if (!socketAddress.is_multicast())
     {
@@ -64,7 +64,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
     workContract_(std::move(workContract))
 {
-    if (auto success = set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1); !success)
+    if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
         throw socket_option_exception("reuse address failure");
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
         throw socket_configuration_exception("set non_blocking failure");

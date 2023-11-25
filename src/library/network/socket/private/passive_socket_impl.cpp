@@ -27,8 +27,12 @@ void bcpp::network::passive_socket_impl::accept
     ::sockaddr address;
     socklen_t addressLength = sizeof(address);
     system::file_descriptor fileDescriptor(::accept(fileDescriptor_.get(), &address, &addressLength));
-    if (acceptHandler_)
-        acceptHandler_(id_, std::move(fileDescriptor));
+    if (fileDescriptor.is_valid())
+    {
+        if (acceptHandler_)
+            acceptHandler_(id_, std::move(fileDescriptor));
+        workContract_.schedule(); // could be more
+    }
 }
 
 

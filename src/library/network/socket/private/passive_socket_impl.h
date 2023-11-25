@@ -26,15 +26,14 @@ namespace bcpp::network
         struct event_handlers : socket_base_impl::event_handlers
         {
             using accept_handler = std::function<void(socket_id, system::file_descriptor)>;
-
             accept_handler acceptHandler_;
         };
 
         struct configuration
         {
-            system::synchronization_mode synchronicityMode_{system::synchronization_mode::non_blocking};
-            std::uint32_t backlog_;
-            system::io_mode ioMode_{system::io_mode::read_write};
+            system::synchronization_mode    synchronicityMode_{system::synchronization_mode::non_blocking};
+            std::uint32_t                   backlog_{1024};
+            system::io_mode                 ioMode_{system::io_mode::read_write};
         };
 
         socket_impl

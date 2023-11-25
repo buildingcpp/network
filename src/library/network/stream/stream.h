@@ -66,7 +66,7 @@ namespace bcpp::network
         void send();
 
         socket_type                     socket_;
-        system::blocking_work_contract           workContract_;
+        system::blocking_work_contract  workContract_;
         std::deque<packet_type>         packets_;
         std::mutex mutable              mutex_;
     }; // class stream<>

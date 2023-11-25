@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 
 
 namespace
@@ -11,7 +12,6 @@ namespace
     static auto constexpr max_tcp_read_buffer_size = ((1ul << 10) * 64);
     static auto constexpr default_tcp_read_buffer_size = ((1ul << 10) * 4);
     static auto constexpr default_udp_read_buffer_size = ((1ul << 10) * 2);
-            
 }
 
 
@@ -239,27 +239,43 @@ requires (udp_protocol_concept<P>)
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
+std::uint32_t bcpp::network::active_socket_impl<P>::get_bytes_available
+(
+) const noexcept
+{
+    std::uint32_t available = 0;
+    if (::ioctl(fileDescriptor_.get(), FIONREAD, &available) == 0)
+        return available;
+    return {};
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
 void bcpp::network::active_socket_impl<P>::receive
 (
 ) requires (tcp_protocol_concept<P>)
 {
-    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
-    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived >= 0)
+    if (auto bytesAvailable = get_bytes_available(); bytesAvailable > 0)
     {
-        if (bytesReceived == 0)        
+        packet buffer = packetAllocationHandler_(id_, readBufferSize_);
+        if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived >= 0)
         {
-            // graceful shutdown
-            close();
-            return;
+            if (bytesReceived == 0)        
+            {
+                // graceful shutdown
+                close();
+                return;
+            }
+            buffer.resize(bytesReceived);
+            receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
+            on_polled(); // there could be more ...
         }
-        buffer.resize(bytesReceived);
-        receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
-        on_polled(); // there could be more ...
-    }
-    else
-    {
-        if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
-            receiveErrorHandler_(id_, errno);
+        else
+        {
+            if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
+                receiveErrorHandler_(id_, errno);
+        }
     }
 }
 
@@ -270,24 +286,24 @@ void bcpp::network::active_socket_impl<P>::receive
 (
 ) requires (udp_protocol_concept<P>)
 {
-    ::sockaddr_in sockAddrIn;
-    ::socklen_t addressLength = sizeof(sockAddrIn);
+    if (auto bytesAvailable = get_bytes_available(); bytesAvailable > 0)
+    {
+        ::sockaddr_in sockAddrIn;
+        ::socklen_t addressLength = sizeof(sockAddrIn);
 
-    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
-    if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0, 
-            reinterpret_cast<::sockaddr *>(&sockAddrIn), &addressLength); bytesReceived >= 0)
-    {
-        buffer.resize(bytesReceived);
-        receiveHandler_(id_, std::move(buffer), sockAddrIn);
-        on_polled(); // there could be more ...
-    }
-    else
-    {
-        if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
-            receiveErrorHandler_(id_, errno);
+        packet buffer = packetAllocationHandler_(id_, readBufferSize_);
+        if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0, 
+                reinterpret_cast<::sockaddr *>(&sockAddrIn), &addressLength); bytesReceived >= 0)
+        {
+            buffer.resize(bytesReceived);
+            receiveHandler_(id_, std::move(buffer), sockAddrIn);
+            on_polled(); // there could be more ...
+        }
         else
-            ;// TODO: there was no reason to allocate the packet in the first place
-            // when allocators are added this will be a trivial issue.
+        {
+            if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
+                receiveErrorHandler_(id_, errno);
+        }
     }
 }
 

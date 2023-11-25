@@ -71,6 +71,22 @@ namespace bcpp::network
 
         socket_id get_id() const;
         
+        template <typename V>
+        std::int32_t get_socket_option
+        (
+            std::int32_t,
+            std::int32_t,
+            V &
+        ) const noexcept;
+
+        template <typename V>
+        std::int32_t set_socket_option
+        (
+            std::int32_t,
+            std::int32_t,
+            V
+        ) noexcept;
+
     private:
 
         using impl_type = socket_impl<traits>;

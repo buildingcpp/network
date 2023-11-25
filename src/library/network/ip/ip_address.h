@@ -65,7 +65,7 @@ namespace bcpp::network
     {
         ::in_addr value = ipAddress;
         auto p = reinterpret_cast<std::uint8_t const *>(&value.s_addr);
-        return fmt::format("{}.{}.{}.{}", p[3], p[2], p[1], p[0]);       
+        return fmt::format("{}.{}.{}.{}", p[0], p[1], p[2], p[3]);       
     }
 
 } // namespace bcpp::network

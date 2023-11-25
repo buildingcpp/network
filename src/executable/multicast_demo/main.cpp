@@ -31,7 +31,7 @@ int main
         workerThread = std::jthread{[&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets();}};
 
     // set up sender
-    auto sender = networkInterface.udp_connect({loop_back, port_id_any}, "239.0.0.1:3000", {}, {});
+    auto sender = networkInterface.udp_connect({in_addr_any, port_id_any}, "239.0.0.1:3000", {}, {});
 
     // set up receivers
     static auto constexpr number_of_receivers = 10;

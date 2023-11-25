@@ -77,6 +77,22 @@ namespace bcpp::network
             system::io_mode
         ) noexcept;
 
+        template <typename V>
+        std::int32_t set_socket_option
+        (
+            std::int32_t,
+            std::int32_t,
+            V
+        ) noexcept;
+       
+        template <typename V>
+        std::int32_t get_socket_option
+        (
+            std::int32_t,
+            std::int32_t,
+            V &
+        ) const noexcept;
+
     protected:
 
         // unfortunate
@@ -96,14 +112,6 @@ namespace bcpp::network
 
         void on_poll_error();
 
-        template <typename T>
-        bool set_socket_option
-        (
-            std::int32_t,
-            std::int32_t,
-            T
-        ) noexcept;
-
         void bind
         (
             socket_address const &
@@ -121,7 +129,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        system::blocking_work_contract               workContract_;
+        system::blocking_work_contract      workContract_;
 
     }; // class socket_base_impl
 
@@ -129,13 +137,26 @@ namespace bcpp::network
 
 
 //=============================================================================
-template <typename T>
-bool bcpp::network::socket_base_impl::set_socket_option
+template <typename V>
+std::int32_t bcpp::network::socket_base_impl::get_socket_option
 (
     std::int32_t level,
     std::int32_t optionName,
-    T optionValue
+    V & value
+) const noexcept
+{
+    return ::setsockopt(fileDescriptor_.get(), level, optionName, &value, sizeof(value));
+}
+
+
+//=============================================================================
+template <typename V>
+std::int32_t bcpp::network::socket_base_impl::set_socket_option
+(
+    std::int32_t level,
+    std::int32_t optionName,
+    V value
 ) noexcept
 {
-    return (::setsockopt(fileDescriptor_.get(), level, optionName, &optionValue, sizeof(optionValue)) == 0);
+    return ::setsockopt(fileDescriptor_.get(), level, optionName, &value, sizeof(value));
 }

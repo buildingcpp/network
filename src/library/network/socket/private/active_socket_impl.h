@@ -112,6 +112,8 @@ namespace bcpp::network
 
         bool disconnect();
 
+        std::uint32_t get_bytes_available() const noexcept;
+
         std::size_t                                         readBufferSize_;
 
         socket_address                                      peerSocketAddress_;

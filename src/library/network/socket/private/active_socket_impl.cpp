@@ -174,6 +174,29 @@ bool bcpp::network::active_socket_impl<P>::disconnect
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
+void bcpp::network::active_socket_impl<P>::on_hang_up
+(
+) 
+{
+    if (auto hangUpHandler = std::exchange(hangUpHandler_, nullptr); hangUpHandler != nullptr)
+        hangUpHandler(id_);
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+void bcpp::network::active_socket_impl<P>::on_peer_hang_up
+(
+)
+{
+    if (auto peerHangUpHandler = std::exchange(peerHangUpHandler_, nullptr); peerHangUpHandler != nullptr)
+        peerHangUpHandler(id_);
+    close();
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
 auto bcpp::network::active_socket_impl<P>::send
 (
     std::span<char const> source
@@ -254,6 +277,14 @@ std::uint32_t bcpp::network::active_socket_impl<P>::get_bytes_available
 template <bcpp::network::network_transport_protocol P>
 void bcpp::network::active_socket_impl<P>::receive
 (
+    // TODO: restricting call to ::recv to cases where there is at least one
+    // byte of data available prevents the ability to detect a graceful shutdown.
+    // But not restricting it causes packet allocation even when there is no data
+    // available.  
+    // three solutions:
+    // cheap allocation via an allocator (planned)
+    // retain unused allocation for subsequent calls to recv until data is available
+    // use MSG_PEEK to determine if zero bytes is indicative of graceful shutdown using return code.
 ) requires (tcp_protocol_concept<P>)
 {
     if (auto bytesAvailable = get_bytes_available(); bytesAvailable > 0)

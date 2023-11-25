@@ -37,6 +37,8 @@ namespace bcpp::network
         {
             using close_handler = std::function<void(socket_id)>;
             using poll_error_handler = std::function<void(socket_id)>;
+            using hang_up_handler = std::function<void(socket_id)>;
+            using peer_hang_up_handler = std::function<void(socket_id)>;
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
@@ -46,6 +48,8 @@ namespace bcpp::network
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
+            hang_up_handler             hangUpHandler_;
+            peer_hang_up_handler        peerHangUpHandler_;
         };
 
         struct configuration

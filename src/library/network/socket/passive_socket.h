@@ -35,9 +35,9 @@ namespace bcpp::network
             using poll_error_handler = std::function<void(socket_id)>;
             using accept_handler = std::function<void(socket_id, system::file_descriptor)>;
 
-            close_handler       closeHandler_;
-            poll_error_handler  pollErrorHandler_;
-            accept_handler      acceptHandler_;
+            close_handler           closeHandler_;
+            poll_error_handler      pollErrorHandler_;
+            accept_handler          acceptHandler_;
         };
 
         struct configuration

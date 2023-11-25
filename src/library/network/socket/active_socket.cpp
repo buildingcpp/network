@@ -26,7 +26,9 @@ bcpp::network::active_socket<P>::socket
                 eventHandlers.pollErrorHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
-                eventHandlers.packetAllocationHandler_
+                eventHandlers.packetAllocationHandler_,
+                eventHandlers.hangUpHandler_,
+                eventHandlers.peerHangUpHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
@@ -57,7 +59,9 @@ bcpp::network::active_socket<P>::socket
                 eventHandlers.pollErrorHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
-                eventHandlers.packetAllocationHandler_
+                eventHandlers.packetAllocationHandler_,
+                eventHandlers.hangUpHandler_,
+                eventHandlers.peerHangUpHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
@@ -88,7 +92,9 @@ bcpp::network::active_socket<P>::socket
                 eventHandlers.pollErrorHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
-                eventHandlers.packetAllocationHandler_
+                eventHandlers.packetAllocationHandler_,
+                eventHandlers.hangUpHandler_,
+                eventHandlers.peerHangUpHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));

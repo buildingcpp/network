@@ -32,8 +32,8 @@ namespace bcpp::network
             using close_handler = std::function<void(socket_id)>;
             using poll_error_handler = std::function<void(socket_id)>;
 
-            close_handler       closeHandler_;
-            poll_error_handler  pollErrorHandler_;
+            close_handler           closeHandler_;
+            poll_error_handler      pollErrorHandler_;
         };
 
         struct configuration
@@ -71,6 +71,10 @@ namespace bcpp::network
         socket_id get_id() const noexcept;
 
         bool shutdown() noexcept;
+
+        virtual void on_hang_up(){}
+
+        virtual void on_peer_hang_up(){}
 
         bool set_io_mode
         (

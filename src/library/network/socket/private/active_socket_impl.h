@@ -32,10 +32,14 @@ namespace bcpp::network
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
             using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
+            using hang_up_handler = std::function<void(socket_id)>;
+            using peer_hang_up_handler = std::function<void(socket_id)>;
 
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
+            hang_up_handler             hangUpHandler_;
+            peer_hang_up_handler        peerHangUpHandler_;
         };
 
         struct configuration
@@ -114,6 +118,10 @@ namespace bcpp::network
 
         std::uint32_t get_bytes_available() const noexcept;
 
+        void on_hang_up() override;
+
+        void on_peer_hang_up() override;
+
         std::size_t                                         readBufferSize_;
 
         socket_address                                      peerSocketAddress_;
@@ -125,6 +133,10 @@ namespace bcpp::network
         typename event_handlers::receive_error_handler      receiveErrorHandler_;
         
         typename event_handlers::packet_allocation_handler  packetAllocationHandler_;
+
+        event_handlers::hang_up_handler                     hangUpHandler_;
+
+        event_handlers::peer_hang_up_handler                peerHangUpHandler_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

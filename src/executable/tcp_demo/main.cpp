@@ -176,10 +176,10 @@ int main
     char **
 )
 {
+
     server myServer;
     client myClient(listenerSocketAddress);
     myClient.send("this is the message");
-
     std::this_thread::sleep_for(std::chrono::seconds(1)); // demo is async so give it a moment to complete
     return 0;
 }

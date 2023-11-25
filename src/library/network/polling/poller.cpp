@@ -86,8 +86,15 @@ void bcpp::network::poller::poll
             impl->on_poll_error();
             continue;
         }
+
         if (event.events & EPOLLIN)
             impl->on_polled();
+
+        if (event.events & EPOLLHUP)
+            impl->on_hang_up();
+
+        if (event.events & EPOLLRDHUP)
+            impl->on_peer_hang_up();
     }   
 }
 

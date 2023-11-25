@@ -26,7 +26,7 @@ namespace bcpp::network
         struct event_handlers : socket_base_impl::event_handlers
         {
             using accept_handler = std::function<void(socket_id, system::file_descriptor)>;
-            accept_handler acceptHandler_;
+            accept_handler  acceptHandler_;
         };
 
         struct configuration
@@ -53,7 +53,7 @@ namespace bcpp::network
 
         poller_registration    pollerRegistration_;
 
-        typename event_handlers::accept_handler acceptHandler_;
+        typename event_handlers::accept_handler     acceptHandler_;
 
     }; // namespace socket_impl<tcp_listener_socket_traits> 
 

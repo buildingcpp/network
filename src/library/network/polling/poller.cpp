@@ -24,6 +24,16 @@ namespace
 
 
 //=============================================================================
+auto bcpp::network::poller::create
+(
+    configuration const & config
+) -> std::shared_ptr<poller> 
+{
+    return std::shared_ptr<poller>(new poller(config));
+}
+
+
+//=============================================================================
 bcpp::network::poller::poller
 (
     configuration const & config

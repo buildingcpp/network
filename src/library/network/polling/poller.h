@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./poller_registration.h"
+#include <include/non_copyable.h>
 #include <include/file_descriptor.h>
 
 #include <library/network/socket/socket.h>
@@ -15,7 +16,9 @@ namespace bcpp::network
 {
 
     class poller :
-        public std::enable_shared_from_this<poller>
+        public std::enable_shared_from_this<poller>,
+        non_copyable,
+        non_movable
     {
     public:
 
@@ -30,7 +33,7 @@ namespace bcpp::network
             trigger_type trigger_{trigger_type::edge_triggered};
         };
 
-        poller
+        static std::shared_ptr<poller> create
         (
             configuration const &
         );
@@ -58,6 +61,11 @@ namespace bcpp::network
         void close();
 
     private:
+
+        poller
+        (
+            configuration const &
+        );
 
         system::file_descriptor fileDescriptor_;
 

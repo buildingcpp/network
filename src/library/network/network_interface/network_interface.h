@@ -122,13 +122,13 @@ namespace bcpp::network
         
     private:
 
-        std::shared_ptr<poller>         poller_;
-        system::blocking_work_contract_group     workContractGroup_;
+        std::shared_ptr<poller>                 poller_;
+        system::blocking_work_contract_group    workContractGroup_;
 
-        std::mutex mutable              mutex_;
-        std::condition_variable         conditionVariable_;
+        std::mutex mutable                      mutex_;
+        std::condition_variable                 conditionVariable_;
 
-        std::atomic<bool>               stopped_{false};
+        std::atomic<bool>                       stopped_{false};
 
     }; // class network_interface
 

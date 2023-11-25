@@ -5,7 +5,7 @@
 bcpp::network::network_interface::network_interface
 (
 ):
-    poller_(std::make_shared<poller>(poller::configuration{})),
+    poller_(poller_->create(poller::configuration{})),
     workContractGroup_(default_capacity)
 {
 }
@@ -16,7 +16,7 @@ bcpp::network::network_interface::network_interface
 (
     configuration const & config
 ):
-    poller_(std::make_shared<poller>(config.poller_)),
+    poller_(poller_->create(config.poller_)),
     workContractGroup_(config.capacity_)
 {
 }

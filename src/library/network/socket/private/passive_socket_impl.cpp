@@ -31,7 +31,7 @@ void bcpp::network::passive_socket_impl::accept
     {
         if (acceptHandler_)
             acceptHandler_(id_, std::move(fileDescriptor));
-        workContract_.schedule(); // could be more
+        on_polled(); // could be more
     }
 }
 

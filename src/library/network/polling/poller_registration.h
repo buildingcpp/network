@@ -1,5 +1,6 @@
 #pragma once
 
+#include <include/non_copyable.h>
 #include <library/system.h>
 #include <include/file_descriptor.h>
 
@@ -12,7 +13,9 @@ namespace bcpp::network
     class poller;
 
 
-    class poller_registration
+    class poller_registration :
+        non_copyable,
+        non_movable
     {
     public:
 

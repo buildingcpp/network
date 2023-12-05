@@ -7,11 +7,11 @@
 //=============================================================================
 bcpp::network::socket_address::socket_address
 (
-    std::string const & value
+    std::span<char const> value
 )
 {
     auto iter = std::find(value.begin(), value.end(), ':');
-    ipAddress_ = std::string(value.data(), std::distance(value.begin(), iter));
+    ipAddress_ = value.subspan(std::distance(value.begin(), iter));
     portId_ = std::string((iter < value.end()) ? iter + 1 : iter, value.end());
 }
 
@@ -35,7 +35,7 @@ bool bcpp::network::socket_address::is_multicast
 
 
 //=============================================================================
-auto bcpp::network::socket_address::get_network_id
+auto bcpp::network::socket_address::get_ip_address
 (
 ) const noexcept -> ip_address
 {

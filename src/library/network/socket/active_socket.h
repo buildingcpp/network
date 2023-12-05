@@ -118,6 +118,8 @@ namespace bcpp::network
 
         socket_address get_socket_address() const noexcept;
 
+        ip_address get_ip_address() const noexcept;
+        
         bool is_connected() const noexcept;
 
         socket_address get_peer_socket_address() const noexcept;

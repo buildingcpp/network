@@ -180,6 +180,15 @@ auto bcpp::network::active_socket<P>::get_socket_address
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
+auto bcpp::network::active_socket<P>::get_ip_address
+(
+) const noexcept -> ip_address
+{
+    return (impl_) ? impl_->get_ip_address() : ip_address{};
+}
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
 bool bcpp::network::active_socket<P>::is_connected
 (
 ) const noexcept

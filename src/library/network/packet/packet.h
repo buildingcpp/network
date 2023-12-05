@@ -23,6 +23,8 @@ namespace bcpp::network
             delete_handler deleteHandler_;
         };
 
+        packet(){}
+        
         packet
         (
             event_handlers const &, 
@@ -72,9 +74,9 @@ namespace bcpp::network
 
         std::span<element_type>  buffer_;
 
-        delete_handler  deleteHandler_{nullptr};
+        delete_handler           deleteHandler_{nullptr};
 
-        std::size_t     size_{0};
+        std::size_t              size_{0};
 
     };
 
@@ -88,7 +90,8 @@ inline bcpp::network::packet::packet
     std::span<element_type> buffer
 ):
     buffer_(buffer), 
-    deleteHandler_(eventHandler.deleteHandler_)
+    deleteHandler_(eventHandler.deleteHandler_),
+    size_(buffer.size())
 {
 }
 

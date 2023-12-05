@@ -55,6 +55,15 @@ auto bcpp::network::passive_socket::get_socket_address
 
 
 //=============================================================================
+auto bcpp::network::passive_socket::get_ip_address
+(
+) const noexcept -> ip_address
+{
+    return (impl_) ? impl_->get_ip_address() : ip_address{};
+}
+
+
+//=============================================================================
 auto bcpp::network::passive_socket::get_id
 (
 ) const -> socket_id

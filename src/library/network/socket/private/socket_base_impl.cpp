@@ -184,6 +184,15 @@ auto bcpp::network::socket_base_impl::get_socket_address
 
 
 //=============================================================================
+auto bcpp::network::socket_base_impl::get_ip_address
+(
+) const noexcept -> ip_address
+{
+    return socketAddress_.get_ip_address();
+}
+
+
+//=============================================================================
 auto bcpp::network::socket_base_impl::get_id
 (
 ) const noexcept -> socket_id

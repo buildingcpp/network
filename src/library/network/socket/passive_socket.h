@@ -69,6 +69,8 @@ namespace bcpp::network
 
         socket_address get_socket_address() const noexcept;
 
+        ip_address get_ip_address() const noexcept;
+
         socket_id get_id() const;
         
         template <typename V>

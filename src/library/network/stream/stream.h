@@ -1,9 +1,14 @@
 #pragma once
 
+#include <include/non_copyable.h>
+#include <include/non_movable.h>
+
 #include <library/network/ip/socket_address.h>
 #include <library/network/packet/packet.h>
 #include <library/network/socket/active_socket.h>
 #include <library/system.h>
+
+#include <include/spsc_fixed_queue.h>
 
 #include <deque>
 #include <mutex>
@@ -14,8 +19,13 @@
 namespace bcpp::network
 {
 
+    class virtual_network_interface;
+
+
     template <socket_concept S>
-    class stream
+    class stream :
+        non_copyable,
+        non_movable
     {
     public:
 
@@ -23,28 +33,42 @@ namespace bcpp::network
         static auto constexpr is_tcp = tcp_socket_concept<S>;
         static auto constexpr is_udp = udp_socket_concept<S>;
 
-        struct packet_type
+        struct configuration : socket_type::configuration
         {
-            packet          packet_;
-            socket_address  destination_;
+            static auto constexpr default_send_capacity = (1 << 10);
+            std::size_t sendCapacity_{default_send_capacity};
+        };
+
+        struct event_handlers
+        {
+            using receive_handler = std::function<void(stream const &, packet)>;
+            using receive_error_handler = std::function<void(stream const &, std::int32_t)>;
+            using close_handler = std::function<void(stream const &)>;
+            using poll_error_handler = std::function<void(stream const &)>;
+            using hang_up_handler = std::function<void(stream const &)>;
+            using peer_hang_up_handler = std::function<void(stream const &)>;
+
+            receive_handler             receiveHandler_;
+            receive_error_handler       receiveErrorHandler_;
+            close_handler               closeHandler_;
+            poll_error_handler          pollErrorHandler_;
+            hang_up_handler             hangUpHandler_;
+            peer_hang_up_handler        peerHangUpHandler_;
         };
 
         stream
         (
-            socket_type,
+            socket_address,
+            configuration const &,
+            event_handlers const &,
+            virtual_network_interface *,
             system::blocking_work_contract_group &
         );
-
+        
         void send
         (
             packet
         );
-
-        void send_to
-        (
-            socket_address,
-            packet
-        ) requires (is_udp);
 
         connect_result connect_to
         (
@@ -65,9 +89,11 @@ namespace bcpp::network
 
         void send();
 
+        spsc_fixed_queue<packet>        sendQueue_;
+
         socket_type                     socket_;
-        system::blocking_work_contract  workContract_;
-        std::deque<packet_type>         packets_;
+        system::blocking_work_contract  sendWorkContract_;
+        std::deque<packet>              packets_;
         std::mutex mutable              mutex_;
     }; // class stream<>
 
@@ -87,7 +113,7 @@ inline void bcpp::network::stream<S>::send
     std::lock_guard lockGuard(mutex_);
     if (!packets_.empty())
     {
-        auto && [packet, destinationSocketAddress] = packets_.front();
+        auto const & packet = packets_.front();
 
         if constexpr (is_tcp)
         {
@@ -97,11 +123,11 @@ inline void bcpp::network::stream<S>::send
         if constexpr (is_udp)
         {
             // TODO: handle send failure
-            socket_.send_to(destinationSocketAddress, packet);
+            socket_.send(packet);
         }
         packets_.pop_front();
         if (!packets_.empty())
-            workContract_.schedule();
+            sendWorkContract_.schedule();
     }
 }
 

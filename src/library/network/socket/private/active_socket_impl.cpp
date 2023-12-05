@@ -157,7 +157,7 @@ bool bcpp::network::active_socket_impl<P>::disconnect
             // drop multicast membership
             ::ip_mreq mreq;
             ::memset(&mreq, 0x00, sizeof(mreq));
-            mreq.imr_multiaddr = peerSocketAddress_.get_network_id();
+            mreq.imr_multiaddr = peerSocketAddress_.get_ip_address();
             mreq.imr_interface = in_addr_any;
             if (!set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
             {
@@ -277,37 +277,30 @@ std::uint32_t bcpp::network::active_socket_impl<P>::get_bytes_available
 template <bcpp::network::network_transport_protocol P>
 void bcpp::network::active_socket_impl<P>::receive
 (
-    // TODO: restricting call to ::recv to cases where there is at least one
-    // byte of data available prevents the ability to detect a graceful shutdown.
-    // But not restricting it causes packet allocation even when there is no data
-    // available.  
-    // three solutions:
-    // cheap allocation via an allocator (planned)
-    // retain unused allocation for subsequent calls to recv until data is available
-    // use MSG_PEEK to determine if zero bytes is indicative of graceful shutdown using return code.
 ) requires (tcp_protocol_concept<P>)
 {
-    if (auto bytesAvailable = get_bytes_available(); bytesAvailable > 0)
+    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
+    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived > 0)
     {
-        packet buffer = packetAllocationHandler_(id_, readBufferSize_);
-        if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived >= 0)
-        {
-            if (bytesReceived == 0)        
-            {
-                // graceful shutdown
-                close();
-                return;
-            }
-            buffer.resize(bytesReceived);
-            receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
-            on_polled(); // there could be more ...
-        }
-        else
-        {
-            if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
-                receiveErrorHandler_(id_, errno);
-        }
+        buffer.resize(bytesReceived);
+        receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
+        if (get_bytes_available() > 0)
+            on_polled(); // there is more data so reschedule the work contract
+        return;
     }
+
+    if ((errno == EWOULDBLOCK) || (errno == EAGAIN))   
+        return; // nothing to do
+
+    if ((errno == ECONNRESET) || (errno == 0))
+    {   // connection reset or graceful shutdown
+        close(); 
+        return;
+    }
+
+    // an actual error
+    if (receiveErrorHandler_)
+        receiveErrorHandler_(id_, errno);
 }
 
 

@@ -3,11 +3,14 @@ add_library(network
     ./socket/socket_id.cpp
     ./ip/socket_address.cpp
     ./ip/port_id.cpp
+    ./ip/ip_address.cpp
+    ./ip/host_name.cpp
     ./socket/active_socket.cpp
     ./socket/passive_socket.cpp
     ./polling/poller.cpp
     ./polling/poller_registration.cpp
-    ./network_interface/network_interface.cpp
+    ./network_interface/virtual_network_interface.cpp
+    ./network_interface/network_interface_name.cpp
     ./socket/private/socket_base_impl.cpp
     ./socket/private/passive_socket_impl.cpp
     ./socket/private/active_socket_impl.cpp

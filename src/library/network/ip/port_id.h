@@ -66,6 +66,12 @@ namespace bcpp::network
 } // namespace bcpp::network
 
 
+namespace bcpp::literals
+{
+    static constexpr network::port_id operator""_port(unsigned long long int value){return network::port_id(value);}
+}
+
+
 //=============================================================================
 static std::ostream & operator << 
 (

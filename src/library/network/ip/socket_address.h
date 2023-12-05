@@ -36,7 +36,7 @@ namespace bcpp::network
 
         socket_address
         (
-            std::string const &
+            std::span<char const> 
         );
 
         constexpr socket_address
@@ -55,7 +55,7 @@ namespace bcpp::network
             ::sockaddr_in
         ) noexcept;
 
-        ip_address get_network_id() const noexcept;
+        ip_address get_ip_address() const noexcept;
 
         port_id get_port_id() const noexcept;
         
@@ -80,7 +80,7 @@ namespace bcpp::network
         socket_address socketAddress
     )
     {
-        return fmt::format("{}:{}", to_string(socketAddress.get_network_id()), to_string(socketAddress.get_port_id()));     
+        return fmt::format("{}:{}", to_string(socketAddress.get_ip_address()), to_string(socketAddress.get_port_id()));     
     }
 
 } // namespace bcpp::network
@@ -97,7 +97,7 @@ inline bcpp::network::socket_address::socket_address
     auto end = value + N;
 
     auto iter = std::find(begin, end, ':');
-    ipAddress_ = std::string(begin, std::distance(begin, iter));
+    ipAddress_ = std::span(begin, std::distance(begin, iter));
     portId_ = std::string((iter < end) ? iter + 1 : iter, end);
 }
 

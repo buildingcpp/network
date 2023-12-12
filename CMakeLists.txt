@@ -24,7 +24,6 @@ else()
     )
 endif()
 
-
 include("./scripts/fetch_dependencies.cmake")
 
 fetch_dependency("https://github.com/fmtlib/fmt.git;")

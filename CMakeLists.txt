@@ -24,10 +24,10 @@ else()
     )
 endif()
 
+add_compile_definitions(USE_KQUEUE)
 
 include("./scripts/fetch_dependencies.cmake")
 
-fetch_dependency("https://github.com/fmtlib/fmt.git;")
 fetch_dependency("https://github.com/buildingcpp/include.git;main")
 fetch_dependency("https://github.com/buildingcpp/system.git;main")
 

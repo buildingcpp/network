@@ -8,13 +8,14 @@ bcpp::network::passive_socket_impl::socket_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> & p
 ) :    
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract([this](){this->accept();}, [this](){this->destroy();})),
-    pollerRegistration_(p.register_socket(*this)),
+    poller_(p),
     acceptHandler_(eventHandlers.acceptHandler_)
 {
+    p->register_socket(*this);
     ::listen(fileDescriptor_.get(), config.backlog_);
 }
 
@@ -54,7 +55,8 @@ void bcpp::network::passive_socket_impl::destroy
     {
         // remove this socket from the poller before deleting 
         // 'this' as the poller has a raw pointer to 'this'.
-        pollerRegistration_.release();
+        if (auto poller = poller_.lock(); poller)
+            poller->unregister_socket(*this);
         delete this;
     }
 }

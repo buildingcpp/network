@@ -5,6 +5,7 @@
 #include "./return_code/connect_result.h"
 
 #include <library/system.h>
+#include <library/network/poller/poller.h>
 #include <library/network/ip/socket_address.h>
 #include <library/network/packet/packet.h>
 
@@ -21,9 +22,6 @@
 
 namespace bcpp::network
 {
-
-    class poller;
-
 
     //=========================================================================
     template <network_transport_protocol P>
@@ -73,7 +71,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> &
         ) requires (udp_protocol_concept<P>);
 
         socket
@@ -82,7 +80,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> &
         ) requires (tcp_protocol_concept<P>);
 
         socket
@@ -91,7 +89,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> &
         ) requires (tcp_protocol_concept<P>);
 
         ~socket() = default;

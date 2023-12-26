@@ -23,18 +23,19 @@ bcpp::network::active_socket_impl<P>::socket_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> const & p
 ) :
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
-    pollerRegistration_(p.register_socket(*this)),
+    poller_(p),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
             [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
 {
+    p->register_socket(*this);
     if constexpr (tcp_protocol_concept<P>)
         readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
     if constexpr (udp_protocol_concept<P>)
@@ -63,17 +64,18 @@ bcpp::network::active_socket_impl<P>::socket_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> const & p
 ) requires (tcp_protocol_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
-    pollerRegistration_(p.register_socket(*this)),
+    poller_(p),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
             [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
 {
+    p->register_socket(*this);
     readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
     peerSocketAddress_ = get_peer_name();
     if (config.socketReceiveBufferSize_ > 0)
@@ -352,7 +354,8 @@ void bcpp::network::active_socket_impl<P>::destroy
         // remove this socket from the poller before deleting 
         // 'this' as the poller has a raw pointer to 'this'.
         disconnect();
-        pollerRegistration_.release();
+        if (auto poller = poller_.lock(); poller)
+            poller->unregister_socket(*this);
         delete this;
     }
 }

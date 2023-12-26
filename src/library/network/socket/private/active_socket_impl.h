@@ -1,10 +1,10 @@
 #pragma once
 
-#include <library/network/socket/socket.h>
-#include <library/network/polling/poller.h>
-#include <library/network/packet/packet.h>
-
 #include "./socket_base_impl.h"
+
+#include <library/network/socket/socket.h>
+#include <library/network/poller/poller.h>
+#include <library/network/packet/packet.h>
 
 #include <include/io_mode.h>
 #include <library/system.h>
@@ -60,7 +60,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> const &
         );
 
         socket_impl
@@ -69,7 +69,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> const &
         ) requires (tcp_protocol_concept<P>);
 
         virtual ~socket_impl() = default;
@@ -126,7 +126,7 @@ namespace bcpp::network
 
         socket_address                                      peerSocketAddress_;
 
-        poller_registration                                 pollerRegistration_;
+        std::weak_ptr<poller>                               poller_;
 
         typename event_handlers::receive_handler            receiveHandler_;
 

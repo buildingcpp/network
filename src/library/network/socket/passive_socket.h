@@ -4,6 +4,7 @@
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
 #include <include/file_descriptor.h>
+#include <library/network/poller/poller.h>
 #include <library/network/ip/socket_address.h>
 
 #include <library/system.h>
@@ -15,9 +16,6 @@
 
 namespace bcpp::network
 {
-
-    class poller;
-
 
     //=========================================================================
     template <>
@@ -58,7 +56,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> &
         );
 
         ~socket() = default;

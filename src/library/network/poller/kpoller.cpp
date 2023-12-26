@@ -1,7 +1,14 @@
+#if defined(USE_KQUEUE)
+
 #include "./poller.h"
 
 #include <library/network/socket/private/active_socket_impl.h>
 #include <library/network/socket/private/passive_socket_impl.h>
+
+#include <iostream>
+#include <span>
+#include <array>
+#include <chrono>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -10,11 +17,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/un.h>
-#include <sys/epoll.h>
+#include <sys/event.h>
+#include <sys/types.h>
+#include <sys/time.h>
 
-#include <iostream>
-#include <span>
-#include <array>
+
 
 
 namespace
@@ -38,8 +45,7 @@ bcpp::network::poller::poller
 (
     configuration const & config
 ):
-    fileDescriptor_(::epoll_create1(0)),
-    trigger_(config.trigger_)
+    fileDescriptor_(kqueue())
 {
 }
 
@@ -77,61 +83,59 @@ void bcpp::network::poller::poll
     std::chrono::milliseconds duration
 )
 {
-    std::array<::epoll_event, 1024> epollEvents;
-    for (auto const & event : std::span(epollEvents.data(), ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), duration.count())))
+    static thread_local std::array<struct kevent, 1024> events;
+    struct timespec timeout{.tv_sec = 0, .tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count()};
+    for (auto const & event : std::span(events.data(), kevent(fileDescriptor_.get(), nullptr, 0, events.data(), 32, &timeout)))
     {
-        auto impl = reinterpret_cast<socket_base_impl *>(event.data.ptr);
-        if (event.events & EPOLLERR)
+        auto impl = reinterpret_cast<socket_base_impl *>(event.udata);
+        if (event.flags & EV_ERROR)
         {
             impl->on_poll_error();
             continue;
         }
-
-        if (event.events & EPOLLIN)
-            impl->on_polled();
-
-        if (event.events & EPOLLHUP)
-            impl->on_hang_up();
-
-        if (event.events & EPOLLRDHUP)
-            impl->on_peer_hang_up();
-    }   
+        impl->on_polled();
+    }
 }
 
 
 //=============================================================================
 template <bcpp::network::socket_impl_concept S>
-auto bcpp::network::poller::register_socket
+bool bcpp::network::poller::register_socket
 (
-    // add socket to epoller
     S & socket
-) -> poller_registration
+)
 {
-    ::epoll_event epollEvent =
-            {
-                .events = (EPOLLIN | ((trigger_ == trigger_type::edge_triggered) ? EPOLLET : 0)),
-                .data = {.ptr = reinterpret_cast<socket_base_impl *>(&socket)}
-            };
-
-    return {weak_from_this(), (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socket.get_file_descriptor().get(), &epollEvent) == 0) 
-            ? socket.get_file_descriptor() : invalid_file_descriptor};
+    struct kevent event;
+    EV_SET(&event, socket.fileDescriptor_.get(), EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, reinterpret_cast<socket_base_impl *>(&socket));
+    kevent(fileDescriptor_.get(), &event, 1, nullptr, 0, nullptr);
+    return true;
 }
 
 
 //=============================================================================
+template <bcpp::network::socket_impl_concept S>
 bool bcpp::network::poller::unregister_socket
 (
-    system::file_descriptor const & fileDescriptor
+    S & socket
 )
 {
-    return (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, fileDescriptor.get(), nullptr) == 0);
+    struct kevent event;
+    EV_SET(&event, socket.get_file_descriptor().get(), EVFILT_READ, EV_DELETE, 0, 0, nullptr);    
+    kevent(fileDescriptor_.get(), &event, 1, nullptr, 0, nullptr);
+    return true;
 }
 
 
 //=============================================================================
 namespace bcpp::network
 {
-    template poller_registration poller::register_socket(tcp_socket_impl &);
-    template poller_registration poller::register_socket(udp_socket_impl &);
-    template poller_registration poller::register_socket(tcp_listener_socket_impl &);
+    template bool poller::register_socket(tcp_socket_impl &);
+    template bool poller::register_socket(udp_socket_impl &);
+    template bool poller::register_socket(tcp_listener_socket_impl &);
+
+    template bool poller::unregister_socket(tcp_socket_impl &);
+    template bool poller::unregister_socket(udp_socket_impl &);
+    template bool poller::unregister_socket(tcp_listener_socket_impl &);
 }
+
+#endif

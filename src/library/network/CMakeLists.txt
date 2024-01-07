@@ -7,8 +7,8 @@ add_library(network
     ./ip/host_name.cpp
     ./socket/active_socket.cpp
     ./socket/passive_socket.cpp
-    ./polling/poller.cpp
-    ./polling/poller_registration.cpp
+    ./poller/epoller.cpp
+    ./poller/kpoller.cpp
     ./network_interface/virtual_network_interface.cpp
     ./network_interface/network_interface_name.cpp
     ./socket/private/socket_base_impl.cpp
@@ -22,6 +22,7 @@ PUBLIC
     fmt::fmt
     include
     system
+    kqueue
     )
 
 target_include_directories(network
@@ -30,4 +31,5 @@ target_include_directories(network
         ${_system_dir}/src
         ${_network_dir}/src
         ${_fmt_src_path}/include
+        /usr/include/kqueue/
 )

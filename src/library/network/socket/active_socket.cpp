@@ -10,7 +10,7 @@ bcpp::network::active_socket<P>::socket
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> & p
 ) requires (udp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
@@ -43,7 +43,7 @@ bcpp::network::active_socket<P>::socket
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> & p
 ) requires (tcp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
@@ -76,7 +76,7 @@ bcpp::network::active_socket<P>::socket
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> & p
 ) requires (tcp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(

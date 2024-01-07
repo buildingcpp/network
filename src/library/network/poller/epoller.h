@@ -1,6 +1,10 @@
+#if !defined(USE_KQUEUE)
+
 #pragma once
 
-#include "./poller_registration.h"
+#include "./poller.h"
+
+#include <include/non_movable.h>
 #include <include/non_copyable.h>
 #include <include/file_descriptor.h>
 
@@ -22,16 +26,7 @@ namespace bcpp::network
     {
     public:
 
-        enum class trigger_type : std::uint32_t
-        {
-            edge_triggered,
-            level_triggered
-        };
-
-        struct configuration
-        {
-            trigger_type trigger_{trigger_type::edge_triggered};
-        };
+        struct configuration{};
 
         static std::shared_ptr<poller> create
         (
@@ -41,14 +36,15 @@ namespace bcpp::network
         ~poller();
 
         template <socket_impl_concept S>
-        poller_registration register_socket
+        bool register_socket
         (
             S &
         );
 
+        template <socket_impl_concept S>
         bool unregister_socket
         (
-            system::file_descriptor const &
+            S &
         );
 
         void poll();
@@ -69,8 +65,8 @@ namespace bcpp::network
 
         system::file_descriptor fileDescriptor_;
 
-        trigger_type            trigger_;
-
     }; // class poller
 
 } // namespace bcpp::network
+
+#endif

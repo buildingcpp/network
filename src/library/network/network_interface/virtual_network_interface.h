@@ -5,7 +5,7 @@
 #include <include/non_movable.h>
 #include <include/non_copyable.h>
 
-#include <library/network/polling/poller.h>
+#include <library/network/poller/poller.h>
 #include <library/network/socket/active_socket.h>
 #include <library/network/socket/passive_socket.h>
 #include <library/network/stream/stream.h>
@@ -34,7 +34,7 @@ namespace bcpp::network
             std::int64_t            capacity_{default_capacity};
         };
 
-        virtual_network_interface() = default;
+        virtual_network_interface();
 
         virtual_network_interface
         (

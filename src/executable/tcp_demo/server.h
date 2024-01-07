@@ -19,14 +19,19 @@ public:
 
     server
     (        
-        std::string_view const interfaceName,
+        bcpp::network::network_interface_name interfaceName,
         bcpp::network::port_id portId
-    ) :
+    ):
         networkInterface_({.physicalNetworkInterfaceName_ = interfaceName})
     {
         // we will use two threads for our example.  one will be responsible for polling the network interface
-        pollerThread_ = std::jthread([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();});
         // the other will be responsible for all of the async socket recv and tcp accepts
+        // NOTE: in a non-demo environment we wouldn't want to create threads in this fashion for the purposes of servicing
+        // a network interface.  It's done this way here for simplicity.
+        // However, because sockets are destroyed asynchronously, and these threads will likely terminate very soon after 'this' is
+        // destroyed, it is likely that the threads will not have time to complete the socket async delete prior to exiting.
+        // But this is just a demo so ...
+        pollerThread_ = std::jthread([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();});
         workerThread_ = std::jthread([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.service_sockets();});
         // create a tcp listener socket
         socket_ = networkInterface_.tcp_listen(     // create a tcp listener socket
@@ -47,7 +52,6 @@ public:
     }
 
     auto get_ip_address() const{return socket_.get_ip_address();}
-
 
     void on_accept_socket
     (

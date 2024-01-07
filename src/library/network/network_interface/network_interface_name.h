@@ -41,6 +41,8 @@ namespace bcpp::network
 
         std::string const & get() const;
 
+        bool empty() const;
+
     private:
 
         std::string value_;

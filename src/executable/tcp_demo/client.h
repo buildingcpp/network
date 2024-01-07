@@ -19,7 +19,7 @@ struct client :
 
     client
     (
-        std::string_view const interfaceName,
+        bcpp::network::network_interface_name interfaceName,
         bcpp::network::socket_address serverSocketAddress
     ):
         networkInterface_({.physicalNetworkInterfaceName_ = interfaceName}),

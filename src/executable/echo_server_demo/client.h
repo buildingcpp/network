@@ -14,10 +14,11 @@
 struct echo_client : bcpp::non_movable, bcpp::non_copyable
 {
     echo_client
-    (
+    (        
+        bcpp::network::network_interface_name networkInterfaceName,
         bcpp::network::socket_address serverAddress
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = "lo"}),
+        networkInterface_({.physicalNetworkInterfaceName_ = networkInterfaceName}),
         socket_(networkInterface_.tcp_connect(serverAddress, {}, 
             {.receiveHandler_ = [&](auto, auto packet, auto){std::cout << std::string(packet.data(), packet.size()) << std::flush;}})),
         pollerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();}),

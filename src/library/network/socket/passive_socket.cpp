@@ -9,7 +9,7 @@ bcpp::network::passive_socket::socket
     configuration const & config,
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
-    poller & p
+    std::shared_ptr<poller> & p
 )
 {
     impl_ = std::move(decltype(impl_)(new impl_type(

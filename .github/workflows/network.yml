@@ -1,0 +1,37 @@
+name: network
+
+on:
+  pull_request:
+    branches: [main]
+  
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        compiler: [ g++-12 ]
+        include:
+          - os: ubuntu-latest
+            compiler: g++-12
+            target: Linux
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: build
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make
+          ./bin/network/test_virtual_network_interface
+          ./bin/network/test_tcp_socket
+          ./bin/network/test_udp_socket

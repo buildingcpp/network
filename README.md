@@ -1,4 +1,7 @@
-# network [WIP] - a simple, easy to use async network library using work contracts
+<img src="https://github.com/buildingcpp/system/actions/workflows/system.yml/badge.svg?branch=main">
+
+
+# network - a simple, easy to use async network library using work contracts
 lots of logging, documentation and error handling to be added
 
 
@@ -46,6 +49,3 @@ To remove `239.0.0.1`: (in my case from interface `wlp5s0`)
 ```
 ~$ sudo ip addr del 239.0.0.1/32 dev wlp5s0
 ```
-
-# examples:
-

@@ -15,7 +15,7 @@ namespace
     bcpp::network::ip_address get_physical_network_interface
     (
         // for now, only ipv4
-        bcpp::network::network_interface_name
+        bcpp::network::network_interface_name interfaceName
     )
     {
         bcpp::network::ip_address ipAddress;
@@ -26,7 +26,7 @@ namespace
             auto cur = interfaceAddress;
             while (cur != nullptr)
             {
-                if (cur->ifa_addr->sa_family == AF_INET)
+                if ((cur->ifa_addr != nullptr) && (cur->ifa_addr->sa_family == AF_INET) && (interfaceName == cur->ifa_name))
                 {
                     ipAddress = {((struct sockaddr_in *)(cur->ifa_addr))->sin_addr};
                     break;
@@ -46,10 +46,23 @@ namespace
 //=============================================================================
 bcpp::network::virtual_network_interface::virtual_network_interface
 (
-    configuration const & config
-)
+):
+    ipAddress_(in_addr_any)
 {
-    if (ipAddress_ = get_physical_network_interface(config.physicalNetworkInterfaceName_); ipAddress_.is_valid())
+    poller_ = poller_->create({});
+    workContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
+    stopped_ = false;
+}
+
+
+//=============================================================================
+bcpp::network::virtual_network_interface::virtual_network_interface
+(
+    configuration const & config
+):
+    ipAddress_((config.physicalNetworkInterfaceName_.empty()) ? in_addr_any : get_physical_network_interface(config.physicalNetworkInterfaceName_))
+{
+    if (ipAddress_.is_valid())
     {
         physicalNetworkInterfaceName_ = config.physicalNetworkInterfaceName_;
         poller_ = poller_->create(config.poller_);
@@ -183,7 +196,7 @@ auto bcpp::network::virtual_network_interface::open_socket
     typename S::event_handlers eventHandlers
 ) -> S
 {
-    return S(std::move(handle), config, eventHandlers, *workContractGroup_, *poller_);
+    return S(std::move(handle), config, eventHandlers, *workContractGroup_, poller_);
 }
 
 

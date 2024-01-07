@@ -48,3 +48,12 @@ auto bcpp::network::network_interface_name::get
 {
     return value_;
 }
+
+
+//=============================================================================
+bool bcpp::network::network_interface_name::empty
+(
+) const
+{
+    return value_.empty();
+}

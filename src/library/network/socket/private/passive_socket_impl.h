@@ -1,7 +1,7 @@
 #pragma once
 
 #include <library/network/socket/socket.h>
-#include <library/network/polling/poller.h>
+#include <library/network/poller/poller.h>
 
 #include "./socket_base_impl.h"
 
@@ -42,7 +42,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
-            poller &
+            std::shared_ptr<poller> &
         );
 
         void destroy();
@@ -51,7 +51,7 @@ namespace bcpp::network
 
         void accept();
 
-        poller_registration    pollerRegistration_;
+        std::weak_ptr<poller>                       poller_;
 
         typename event_handlers::accept_handler     acceptHandler_;
 

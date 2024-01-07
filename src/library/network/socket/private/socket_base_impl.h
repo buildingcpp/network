@@ -2,6 +2,7 @@
 
 #include <library/network/socket/socket_id.h>
 
+#include <library/network/poller/poller.h>
 #include <library/network/socket/return_code/connect_result.h>
 
 #include <library/network/ip/socket_address.h>
@@ -102,7 +103,7 @@ namespace bcpp::network
     protected:
 
         // unfortunate
-        friend class poller;
+        friend poller;
 
         bool set_synchronicity
         (

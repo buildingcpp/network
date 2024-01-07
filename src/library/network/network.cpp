@@ -1,1 +1,57 @@
 #include "./network.h"
+
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+
+
+//=============================================================================
+auto bcpp::network::get_ip_address_from_hostname
+(
+    std::string hostname
+) -> ip_address
+{
+    struct ::addrinfo * result = nullptr;
+    ::getaddrinfo(hostname.c_str(), 0, 0, &result);
+    for (struct addrinfo * cur = result; cur != nullptr; cur = cur->ai_next)
+        if (cur->ai_addr->sa_family == AF_INET) 
+            return ip_address(((struct sockaddr_in *)(cur->ai_addr))->sin_addr);
+    return {};
+}
+
+
+//=============================================================================
+auto bcpp::network::get_available_network_interfaces
+(
+) -> std::vector<network_interface_info>
+{
+    std::vector<network_interface_info> interfaces;
+
+    bcpp::network::ip_address ipAddress;
+    ::ifaddrs * interfaceAddress = nullptr;
+
+    if (auto result = ::getifaddrs(&interfaceAddress); result == 0)
+    {
+        auto cur = interfaceAddress;
+        while (cur != nullptr)
+        {
+            if (cur->ifa_addr->sa_family == AF_INET)
+            {
+                interfaces.push_back(
+                        {
+                            .name_ = cur->ifa_name,
+                            .ipAddress_ = {((struct sockaddr_in *)(cur->ifa_addr))->sin_addr},
+                            .netmask_ = {((struct sockaddr_in *)(cur->ifa_netmask))->sin_addr},
+                        });
+            }
+            cur = cur->ifa_next;
+        }
+    }
+
+    if (interfaceAddress != nullptr)
+        ::freeifaddrs(interfaceAddress);
+
+    return interfaces;
+}

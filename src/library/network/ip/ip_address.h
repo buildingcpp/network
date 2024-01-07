@@ -163,8 +163,8 @@ inline constexpr bool bcpp::network::ip_address::is_loop_back
 (
 ) const noexcept
 {
-    auto constexpr loopback = byte_swap(INADDR_LOOPBACK);
-    return (value_.s_addr == loopback);  
+    auto constexpr mask = 0x000000fful;
+    return ((value_.s_addr & mask) == 127);  
 }
 
 

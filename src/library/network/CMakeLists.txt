@@ -17,13 +17,17 @@ add_library(network
     ./stream/stream.cpp
 )
 
+
 target_link_libraries(network 
 PUBLIC
     fmt::fmt
     include
     system
-    kqueue
     )
+
+if (USE_KQUEUE)
+    target_link_libraries(network PUBLIC kqueue)
+endif()
 
 target_include_directories(network
     PUBLIC

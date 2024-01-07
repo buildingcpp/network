@@ -1,4 +1,4 @@
-<img src="https://github.com/buildingcpp/system/actions/workflows/system.yml/badge.svg?branch=main">
+<img src="https://github.com/buildingcpp/network/actions/workflows/network.yml/badge.svg?branch=main">
 
 
 # network - a simple, easy to use async network library using work contracts

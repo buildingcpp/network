@@ -405,6 +405,11 @@ void bcpp::network::active_socket_impl<P>::destroy
     if (workContract_.is_valid())
     {
         workContract_.release();
+    }    
+    else
+    if (sendWorkContract_.is_valid())
+    {
+        sendWorkContract_.release();
     }
     else
     {

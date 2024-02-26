@@ -99,7 +99,7 @@ void bcpp::network::poller::poll
 
 
 //=============================================================================
-template <bcpp::network::socket_impl_concept S>
+template <bcpp::network::concept::socket_impl S>
 bool bcpp::network::poller::register_socket
 (
     S & socket
@@ -113,7 +113,7 @@ bool bcpp::network::poller::register_socket
 
 
 //=============================================================================
-template <bcpp::network::socket_impl_concept S>
+template <bcpp::network::concept::socket_impl S>
 bool bcpp::network::poller::unregister_socket
 (
     S & socket

@@ -40,6 +40,7 @@ namespace bcpp::network
 
         struct configuration
         {
+            port_id         portId_;
             std::uint32_t   backlog_{default_backlog};
         };
 
@@ -97,6 +98,9 @@ namespace bcpp::network
 
 
     using passive_socket = socket<tcp_listener_socket_traits>;
+
+    template <typename T>
+    concept passive_socket_concept = socket_concept<T> && passive_socket_traits_concept<typename T::traits>;
 
     using tcp_listener_socket = passive_socket;
 

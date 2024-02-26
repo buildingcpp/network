@@ -34,10 +34,10 @@ public:
         pollerThread_ = std::jthread([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();});
         workerThread_ = std::jthread([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.service_sockets();});
         // create a tcp listener socket
-        socket_ = networkInterface_.tcp_listen(     // create a tcp listener socket
-                portId,              // address of this socket
-                {                                   
-                    .backlog_ = 8                   // configuration of this socket (or use the defaults)
+        socket_ = networkInterface_.create_tcp_socket(     // create a tcp listener socket
+                {                    
+                    .portId_ = portId,               
+                    .backlog_ = 8,                   // configuration of this socket (or use the defaults)
                 },
                 {
                     .acceptHandler_ = [this]        // set event handlers
@@ -90,7 +90,7 @@ public:
             std::function<void(session const &)> endSessionHandler 
         ) : endSessionHandler_(endSessionHandler)
         {
-            tcpSocket_ = networkInterface.tcp_accept(   // create a new tcp socket instance
+            tcpSocket_ = networkInterface.accept_tcp_socket(   // create a new tcp socket instance
                     std::move(fileDescriptor),          // move the newly accepted file descriptor into it
                     bcpp::network::tcp_socket::configuration{}, // configure this new tcp socket
                     bcpp::network::tcp_socket::event_handlers{

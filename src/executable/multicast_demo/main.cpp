@@ -79,10 +79,12 @@ int main
                     });
 
         // set up multicast sender socket and then send messages
-        auto sender = networkInterface.udp_connect(multicastChannel, {}, {});
+        auto sender = networkInterface.create_udp_socket({}, {});
+        sender.connect_to(multicastChannel);
         for (auto i = 0; i < 1024; ++i)
         {
-            sender.send(fmt::format("this is a multicast message # {}", i));
+            bcpp::network::packet p(fmt::format("this is a multicast message # {}", i));
+            sender.send(std::move(p));
             std::this_thread::sleep_for(10us); 
         }
 

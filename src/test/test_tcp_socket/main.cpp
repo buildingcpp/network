@@ -44,7 +44,7 @@ int main
     }
     std::cout << "\tcreate tcp listener socket\n";
 
-    auto tcpListenerSocket = virtualNetworkInterface.tcp_listen(3000_port, {}, {.acceptHandler_ = accept_connection});
+    auto tcpListenerSocket = virtualNetworkInterface.create_tcp_socket({.portId_ = 3000_port}, {.acceptHandler_ = accept_connection});
     if (!tcpListenerSocket.is_valid())
     {
         std::cerr << "Failed to create tcp listener socket\n";
@@ -61,7 +61,7 @@ int main
                 }
         });
 
-    auto tcpSocket = virtualNetworkInterface.tcp_connect(tcpListenerSocket.get_socket_address(), {}, {});
+    auto tcpSocket = virtualNetworkInterface.create_tcp_socket(tcpListenerSocket.get_socket_address(), {}, {});
     if (!tcpSocket.is_valid())
     {
         std::cerr << "Failed to connect to tcp listener socket\n";

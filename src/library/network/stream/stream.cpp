@@ -3,8 +3,8 @@
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-bcpp::network::stream<S>::stream
+template <bcpp::network::network_transport_protocol T>
+bcpp::network::stream<T>::stream
 (
     socket_address remoteSocketAddress,
     configuration const & config,
@@ -15,9 +15,9 @@ bcpp::network::stream<S>::stream
     sendQueue_(config.sendCapacity_),
     sendWorkContract_(workContractGroup.create_contract([this](){this->send();}))
 {
-    if constexpr (tcp_socket_concept<S>)
+    if constexpr (tcp_concept<T>)
     {
-        socket_ = virtualNetworkInterface->tcp_connect(remoteSocketAddress,
+        socket_ = virtualNetworkInterface->create_tcp_socket(remoteSocketAddress,
                 config,
                 {
                     .closeHandler_ = [this, closeHandler = eventHandlers.closeHandler_](auto){if (closeHandler) closeHandler(*this);},
@@ -31,9 +31,9 @@ bcpp::network::stream<S>::stream
     }
     else
     {
-        socket_ = virtualNetworkInterface->udp_connect(remoteSocketAddress,
+        socket_ = virtualNetworkInterface->create_udp_socket(
                 config,
-                {
+                bcpp::network::udp_socket::event_handlers{
                     .closeHandler_ = [this, closeHandler = eventHandlers.closeHandler_](auto) mutable{if (closeHandler) closeHandler(*this);},
                     .pollErrorHandler_ = [this, pollErrorHandler = eventHandlers.pollErrorHandler_](auto){if (pollErrorHandler) pollErrorHandler(*this);},
                     .receiveHandler_ = [this, receiveHandler = eventHandlers.receiveHandler_](auto, auto packet, auto){if (receiveHandler) receiveHandler(*this, std::move(packet));},
@@ -42,26 +42,32 @@ bcpp::network::stream<S>::stream
                     .hangUpHandler_ = [this, hangUpHandler = eventHandlers.hangUpHandler_](auto){if (hangUpHandler) hangUpHandler(*this);},
                     .peerHangUpHandler_ = [this, peerHangUpHandler = eventHandlers.peerHangUpHandler_](auto){if (peerHangUpHandler) peerHangUpHandler(*this);}
                 });
+        socket_.connect_to(remoteSocketAddress);
     }
 }
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-void bcpp::network::stream<S>::send
+template <bcpp::network::network_transport_protocol T>
+bool bcpp::network::stream<T>::send
 (
-    packet b
+    // TODO: write test to prove that packet is not moved if push fails
+    packet && thePacket
 )
 {
     std::lock_guard lockGuard(mutex_);
-    packets_.emplace_back(std::move(b));
-    sendWorkContract_.schedule();
+    if (sendQueue_.push(std::move(thePacket)))
+    {
+        sendWorkContract_.schedule();
+        return true;
+    }
+    return false;
 }
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-auto bcpp::network::stream<S>::connect_to
+template <bcpp::network::network_transport_protocol T>
+auto bcpp::network::stream<T>::connect_to
 (
     socket_address const & destination
 ) noexcept -> connect_result
@@ -71,8 +77,8 @@ auto bcpp::network::stream<S>::connect_to
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-bool bcpp::network::stream<S>::close
+template <bcpp::network::network_transport_protocol T>
+bool bcpp::network::stream<T>::close
 (
 )
 {
@@ -81,8 +87,8 @@ bool bcpp::network::stream<S>::close
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-bool bcpp::network::stream<S>::is_valid
+template <bcpp::network::network_transport_protocol T>
+bool bcpp::network::stream<T>::is_valid
 (
 ) const noexcept
 {
@@ -91,8 +97,8 @@ bool bcpp::network::stream<S>::is_valid
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-auto bcpp::network::stream<S>::get_socket_address
+template <bcpp::network::network_transport_protocol T>
+auto bcpp::network::stream<T>::get_socket_address
 (
 ) const noexcept -> socket_address
 {
@@ -101,8 +107,8 @@ auto bcpp::network::stream<S>::get_socket_address
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-bool bcpp::network::stream<S>::is_connected
+template <bcpp::network::network_transport_protocol T>
+bool bcpp::network::stream<T>::is_connected
 (
 ) const noexcept
 {
@@ -111,8 +117,8 @@ bool bcpp::network::stream<S>::is_connected
 
 
 //=============================================================================
-template <bcpp::network::socket_concept S>
-auto bcpp::network::stream<S>::get_peer_socket_address
+template <bcpp::network::network_transport_protocol T>
+auto bcpp::network::stream<T>::get_peer_socket_address
 (
 ) const noexcept -> socket_address
 {
@@ -123,7 +129,7 @@ auto bcpp::network::stream<S>::get_peer_socket_address
 //=============================================================================
 namespace bcpp::network
 {
-    template class stream<tcp_socket>;
-    template class stream<udp_socket>;
+    template class stream<network_transport_protocol::tcp>;
+    template class stream<network_transport_protocol::udp>;
 
 }

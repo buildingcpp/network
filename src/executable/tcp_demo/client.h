@@ -23,7 +23,7 @@ struct client :
         bcpp::network::socket_address serverSocketAddress
     ):
         networkInterface_({.physicalNetworkInterfaceName_ = interfaceName}),
-        socket_(networkInterface_.tcp_connect(
+        socket_(networkInterface_.create_tcp_socket(
                 serverSocketAddress, {}, 
                 {
                     .receiveHandler_ = [&](auto, auto packet, auto){std::cout << std::string(packet.data(), packet.size()) << std::flush;
@@ -35,7 +35,11 @@ struct client :
             std::cout << "client: established connection with server at " << socket_.get_peer_socket_address() << "\n";
     }
 
-    void send(std::span<char const> data){socket_.send(data);}
+    void send(std::span<char const> data)
+    {
+        bcpp::network::packet p(data);
+        socket_.send(std::move(p));
+    }
 
     bcpp::network::virtual_network_interface    networkInterface_;
     bcpp::network::tcp_socket                   socket_;

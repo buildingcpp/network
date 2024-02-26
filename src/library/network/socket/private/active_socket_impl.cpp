@@ -22,23 +22,27 @@ bcpp::network::active_socket_impl<P>::socket_impl
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & sendWorkContractGroup,
+    system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
 ) :
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
-            workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
+            receiveWorkContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     poller_(p),
+    sendHandler_(eventHandlers.sendHandler_ ? eventHandlers.sendHandler_ : typename event_handlers::send_handler()),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
+            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
+    sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
+    sendWorkContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {
     p->register_socket(*this);
-    if constexpr (tcp_protocol_concept<P>)
+    if constexpr (tcp_concept<P>)
         readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
-    if constexpr (udp_protocol_concept<P>)
+    if constexpr (udp_concept<P>)
     {
         readBufferSize_ = default_udp_read_buffer_size;
         if (config.multicastTtl_)
@@ -63,17 +67,21 @@ bcpp::network::active_socket_impl<P>::socket_impl
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & sendWorkContractGroup,
+    system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
-) requires (tcp_protocol_concept<P>) :
+) requires (tcp_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
-            workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
+            receiveWorkContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     poller_(p),
+    sendHandler_(eventHandlers.sendHandler_ ? eventHandlers.sendHandler_ : typename event_handlers::send_handler()),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});})
+            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
+    sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
+    sendWorkContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {
     p->register_socket(*this);
     readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
@@ -116,7 +124,7 @@ template <bcpp::network::network_transport_protocol P>
 auto bcpp::network::active_socket_impl<P>::join
 (
     ip_address ipAddress
-) -> connect_result requires (udp_protocol_concept<P>)
+) -> connect_result requires (udp_concept<P>)
 {
     if (!ipAddress.is_valid())
         return connect_result::invalid_destination;
@@ -199,66 +207,115 @@ void bcpp::network::active_socket_impl<P>::on_peer_hang_up
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket_impl<P>::send
+bool bcpp::network::active_socket_impl<P>::send
 (
-    std::span<char const> source
-) -> std::tuple<std::span<char const>, std::int32_t> 
-requires (tcp_protocol_concept<P>) 
+    packet && data
+)
 {
-    while (!source.empty())
+    return send(std::move(data), {});
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+bool bcpp::network::active_socket_impl<P>::send
+(
+    packet && data,
+    send_token sendToken
+)
+{
+    if (auto queued = sendQueue_.emplace(std::move(data), sendToken, socket_address{}); queued)
     {
-        auto result = ::send(fileDescriptor_.get(), source.data(), source.size(), MSG_NOSIGNAL);
-        if (result < 0)
+        sendWorkContract_.schedule();
+        return true;
+    }
+    return false;
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+bool bcpp::network::active_socket_impl<P>::send_to
+(
+    socket_address destination,
+    packet && data
+)
+requires (udp_concept<P>) 
+{
+    return send_to(destination, std::move(data), {});
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+bool bcpp::network::active_socket_impl<P>::send_to
+(
+    socket_address destination,
+    packet && data,
+    send_token sendToken
+)
+requires (udp_concept<P>) 
+{
+    if (auto queued = sendQueue_.emplace(std::move(data), sendToken, destination); queued)
+    {
+        sendWorkContract_.schedule();
+        return true;
+    }
+    return false;
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+void bcpp::network::active_socket_impl<P>::execute_next_send
+(
+) 
+{ 
+    if constexpr (udp_concept<P>)
+    {
+        auto & [packet, sendToken, destination] = sendQueue_.front();
+        ::sockaddr_in sockAddr = destination;
+        sockAddr.sin_family = AF_INET;
+        auto p = destination.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
+        if (auto result = ::sendto(fileDescriptor_.get(), packet.data(), packet.size(), MSG_NOSIGNAL, p, (p == nullptr) ? 0 : sizeof(sockAddr)); result < 0)
         {
             if (result != EAGAIN)
-                return {source, result};
+            {
+                // issue send error callback here
+            }
         }
         else
         {
-            source = source.subspan(result);
+            if (sendToken)
+                sendHandler_(id_, sendToken);
+            if (auto sizeAfterDiscard = sendQueue_.discard(); sizeAfterDiscard == 0)
+                return; // no more data to send
         }
     }
-    return {source, 0};
-}
-
-
-//=============================================================================
-template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket_impl<P>::send
-(
-    std::span<char const> source
-) -> std::tuple<std::span<char const>, std::int32_t>
-requires (udp_protocol_concept<P>) 
-{
-    return send_to({}, source);
-}
-
-
-//=============================================================================
-template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket_impl<P>::send_to
-(
-    socket_address destinationSocketAddress,
-    std::span<char const> source
-) -> std::tuple<std::span<char const>, std::int32_t>
-requires (udp_protocol_concept<P>) 
-{
-    ::sockaddr_in sockAddr = destinationSocketAddress;
-    sockAddr.sin_family = AF_INET;
-    auto p = destinationSocketAddress.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
-    while (true)
+    else
     {
-        auto result = ::sendto(fileDescriptor_.get(), source.data(), source.size(), MSG_NOSIGNAL, p, (p == nullptr) ? 0 : sizeof(sockAddr));
-        if (result < 0)
+        auto & [packet, sendToken, _] = sendQueue_.front();
+        if (auto result = ::send(fileDescriptor_.get(), packet.data(), packet.size(), MSG_NOSIGNAL); result < 0)
         {
             if (result != EAGAIN)
-                return {source, result};
+            {
+                // issue send error callback here
+            }
         }
         else
         {
-            return {source.subspan(result), 0};
-        }
-    } 
+            packet.discard(result);
+            if (packet.empty())
+            {
+                if (sendToken)
+                    sendHandler_(id_, sendToken);
+                if (auto sizeAfterDiscard = sendQueue_.discard(); sizeAfterDiscard == 0)
+                    return; // no more data to send
+            }
+        }       
+    }
+
+    sendWorkContract_.schedule();
 }
 
 
@@ -279,7 +336,7 @@ std::uint32_t bcpp::network::active_socket_impl<P>::get_bytes_available
 template <bcpp::network::network_transport_protocol P>
 void bcpp::network::active_socket_impl<P>::receive
 (
-) requires (tcp_protocol_concept<P>)
+) requires (tcp_concept<P>)
 {
     packet buffer = packetAllocationHandler_(id_, readBufferSize_);
     if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived > 0)
@@ -310,7 +367,7 @@ void bcpp::network::active_socket_impl<P>::receive
 template <bcpp::network::network_transport_protocol P>
 void bcpp::network::active_socket_impl<P>::receive
 (
-) requires (udp_protocol_concept<P>)
+) requires (udp_concept<P>)
 {
     if (auto bytesAvailable = get_bytes_available(); bytesAvailable > 0)
     {

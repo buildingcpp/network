@@ -103,7 +103,7 @@ namespace bcpp::network
     protected:
 
         // unfortunate
-        friend poller;
+        friend class poller;
 
         bool set_synchronicity
         (

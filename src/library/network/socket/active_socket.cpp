@@ -9,9 +9,10 @@ bcpp::network::active_socket<P>::socket
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & sendWorkContractGroup,
+    system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
-) requires (udp_protocol_concept<P>)
+) requires (udp_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             socketAddress, 
@@ -24,13 +25,14 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
+                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
                 eventHandlers.hangUpHandler_,
                 eventHandlers.peerHangUpHandler_
             },
-            workContractGroup, p), 
+            sendWorkContractGroup, receiveWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
 }
 
@@ -42,9 +44,10 @@ bcpp::network::active_socket<P>::socket
     ip_address ipAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & sendWorkContractGroup,
+    system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
-) requires (tcp_protocol_concept<P>)
+) requires (tcp_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             {ipAddress}, 
@@ -57,13 +60,14 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
+                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
                 eventHandlers.hangUpHandler_,
                 eventHandlers.peerHangUpHandler_
             },
-            workContractGroup, p), 
+            sendWorkContractGroup, receiveWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
 }
 
@@ -75,9 +79,10 @@ bcpp::network::active_socket<P>::socket
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    system::blocking_work_contract_group & sendWorkContractGroup,
+    system::blocking_work_contract_group & recevieWorkContractGroup,
     std::shared_ptr<poller> & p
-) requires (tcp_protocol_concept<P>)
+) requires (tcp_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
@@ -90,13 +95,14 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
+                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
                 eventHandlers.hangUpHandler_,
                 eventHandlers.peerHangUpHandler_
             },
-            workContractGroup, p), 
+            sendWorkContractGroup, recevieWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
 }
 
@@ -118,7 +124,7 @@ auto bcpp::network::active_socket<P>::join
 (
     ip_address ipAddress
 ) -> connect_result 
-requires (P == network_transport_protocol::udp)
+requires (udp_concept<P>)
 {
     return (impl_) ? impl_->join(ipAddress) : connect_result::connect_error;
 }
@@ -126,25 +132,51 @@ requires (P == network_transport_protocol::udp)
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket<P>::send
+bool bcpp::network::active_socket<P>::send
 (
-    std::span<char const> source
-) -> std::tuple<std::span<char const>, std::int32_t>
+    packet && data
+)
 {
-    return (impl_) ? impl_->send(source) : std::make_tuple(source, ENOTCONN);
+    return (impl_) ? impl_->send(std::move(data)) : false;
 }
 
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-auto bcpp::network::active_socket<P>::send_to
+bool bcpp::network::active_socket<P>::send
+(
+    packet && data,
+    send_token sendToken
+)
+{
+    return (impl_) ? impl_->send(std::move(data), sendToken) : false;
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+bool bcpp::network::active_socket<P>::send_to
 (
     socket_address destinationSocketAddress,
-    std::span<char const> source
-) -> std::tuple<std::span<char const>, std::int32_t> 
-requires (P == network_transport_protocol::udp)
+    packet && data
+)
+requires (udp_concept<P>)
 {
-    return (impl_) ? impl_->send_to(destinationSocketAddress, source) : std::make_tuple(source, ENOTCONN);
+    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(data)) : false;
+}
+
+
+//=============================================================================
+template <bcpp::network::network_transport_protocol P>
+bool bcpp::network::active_socket<P>::send_to
+(
+    socket_address destinationSocketAddress,
+    packet && data,
+    send_token sendToken
+)
+requires (udp_concept<P>)
+{
+    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(data), sendToken) : false;
 }
 
 

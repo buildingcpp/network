@@ -19,13 +19,19 @@ struct echo_client : bcpp::non_movable, bcpp::non_copyable
         bcpp::network::socket_address serverAddress
     ):
         networkInterface_({.physicalNetworkInterfaceName_ = networkInterfaceName}),
-        socket_(networkInterface_.tcp_connect(serverAddress, {}, 
-            {.receiveHandler_ = [&](auto, auto packet, auto){std::cout << std::string(packet.data(), packet.size()) << std::flush;}})),
+        socket_(networkInterface_.create_tcp_socket(serverAddress, {}, 
+            {.receiveHandler_ = [&](auto, auto packet, auto)
+            {
+                std::cout << std::string(packet.data(), packet.size()) << std::flush;
+            }})),
         pollerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();}),
         workerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.service_sockets();}){}
 
-    void send(std::span<char const> data){socket_.send(data);}
-
+    void send(std::span<char const> data)
+    {
+        bcpp::network::packet p(data);
+        socket_.send(std::move(p));
+    }
 
     bcpp::network::virtual_network_interface    networkInterface_;
     bcpp::network::tcp_socket                   socket_;

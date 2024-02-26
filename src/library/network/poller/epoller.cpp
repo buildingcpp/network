@@ -102,45 +102,4 @@ void bcpp::network::poller::poll
     }   
 }
 
-
-//=============================================================================
-template <bcpp::network::socket_impl_concept S>
-bool bcpp::network::poller::register_socket
-(
-    // add socket to poller
-    S & socket
-)
-{
-    ::epoll_event epollEvent =
-            {
-                .events = (EPOLLIN | EPOLLET),
-                .data = {.ptr = reinterpret_cast<socket_base_impl *>(&socket)}
-            };
-    return (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socket.get_file_descriptor().get(), &epollEvent) == 0);
-}
-
-
-//=============================================================================
-template <bcpp::network::socket_impl_concept S>
-bool bcpp::network::poller::unregister_socket
-(
-    S & socket
-)
-{
-    return (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, socket.get_file_descriptor().get(), nullptr) == 0);
-}
-
-
-//=============================================================================
-namespace bcpp::network
-{
-    template bool poller::register_socket(tcp_socket_impl &);
-    template bool poller::register_socket(udp_socket_impl &);
-    template bool poller::register_socket(tcp_listener_socket_impl &);
-
-    template bool poller::unregister_socket(tcp_socket_impl &);
-    template bool poller::unregister_socket(udp_socket_impl &);
-    template bool poller::unregister_socket(tcp_listener_socket_impl &);
-}
-
 #endif

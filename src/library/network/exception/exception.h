@@ -28,9 +28,6 @@ namespace bcpp::network
         char const * what_;
     };
 
-    template <typename T>
-    concept exception_concept = std::is_same_v<T, exception<T::type>>;
-
 
     using bind_exception = exception<exception_type::bind>;
     using socket_option_exception = exception<exception_type::socket_option>;

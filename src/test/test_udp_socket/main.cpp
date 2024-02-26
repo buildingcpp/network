@@ -18,7 +18,7 @@ int main
         return -1;
     }
     std::cout << "\tcreate udp socket\n";
-    auto udpSocket = virtualNetworkInterface.udp_connectionless({}, {});
+    auto udpSocket = virtualNetworkInterface.create_udp_socket({}, {});
     if (!udpSocket.is_valid())
     {
         std::cerr << "Failed to create connectionless udp socket\n";

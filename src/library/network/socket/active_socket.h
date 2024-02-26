@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./socket.h"
+#include "./send_token.h"
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
 
@@ -37,12 +38,14 @@ namespace bcpp::network
             using poll_error_handler = std::function<void(socket_id)>;
             using hang_up_handler = std::function<void(socket_id)>;
             using peer_hang_up_handler = std::function<void(socket_id)>;
+            using send_handler = std::function<void(socket_id, send_token)>;
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
             close_handler               closeHandler_;
             poll_error_handler          pollErrorHandler_;
+            send_handler                sendHandler_;
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
@@ -55,6 +58,7 @@ namespace bcpp::network
             std::size_t socketReceiveBufferSize_{0};
             std::size_t socketSendBufferSize_{0};
             std::size_t readBufferSize_{0};
+            std::size_t sendQueueSize_{0};
             system::io_mode ioMode_{system::io_mode::read_write};
         };
 
@@ -71,8 +75,9 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             std::shared_ptr<poller> &
-        ) requires (udp_protocol_concept<P>);
+        ) requires (udp_concept<P>);
 
         socket
         (
@@ -80,8 +85,9 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             std::shared_ptr<poller> &
-        ) requires (tcp_protocol_concept<P>);
+        ) requires (tcp_concept<P>);
 
         socket
         (
@@ -89,21 +95,35 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             std::shared_ptr<poller> &
-        ) requires (tcp_protocol_concept<P>);
+        ) requires (tcp_concept<P>);
 
         ~socket() = default;
 
-        std::tuple<std::span<char const>, std::int32_t> send
+        bool send
         (
-            std::span<char const>
+            packet &&
         );
 
-        std::tuple<std::span<char const>, std::int32_t> send_to
+        bool send
+        (
+            packet &&,
+            send_token
+        );
+
+        bool send_to
         (
             socket_address,
-            std::span<char const>
-        ) requires (P == network_transport_protocol::udp);
+            packet &&
+        ) requires (udp_concept<P>);
+
+        bool send_to
+        (
+            socket_address,
+            packet &&,
+            send_token
+        ) requires (udp_concept<P>);
 
         connect_result connect_to
         (
@@ -127,7 +147,7 @@ namespace bcpp::network
         connect_result join
         (
             ip_address
-        ) requires (P == network_transport_protocol::udp);
+        ) requires (udp_concept<P>);
 
         bool shutdown() noexcept;
 
@@ -171,6 +191,9 @@ namespace bcpp::network
 
     template <network_transport_protocol T>
     using active_socket = socket<active_socket_traits<T>>;
+
+    template <typename T>
+    concept active_socket_concept = socket_concept<T> && active_socket_traits_concept<typename T::traits>;
 
     using udp_socket = active_socket<network_transport_protocol::udp>;
     using tcp_socket = active_socket<network_transport_protocol::tcp>;

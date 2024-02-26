@@ -56,24 +56,28 @@ int main
                 };
 
         // create a standard (connectionless) UDP socket
-        auto socket1 = networkInterface.udp_connectionless({/*default configuration for this demo*/}, 
+        auto socket1 = networkInterface.create_udp_socket({/*default configuration for this demo*/}, 
                 {.receiveHandler_ = [](auto socketId, auto packet, auto senderSocketAddress){std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress <<
                 ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";}});
 
-        auto udpStream = networkInterface.open_stream<bcpp::network::udp_socket>(socket1.get_socket_address(), 
+        auto socket2 = networkInterface.create_udp_socket( 
                 {},
                 {
                     .receiveHandler_ = []
                             (
-                                auto const & udpStream, 
-                                auto packet
+                                auto socketId, 
+                                auto packet,
+                                auto senderSocketAddress
                             )
                             {
-                                std::cout << "udp stream " << udpStream.get_socket_address() << " received message from " << udpStream.get_peer_socket_address() << ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";
+                                std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress << ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";
                             }
                 });
-        udpStream.send(create_packet("guess what!"));
-        socket1.send_to(udpStream.get_socket_address(), create_packet("chicken butt!!"));
+        socket2.connect_to(socket1.get_socket_address());
+        //auto packet1 = create_packet("guess what!");
+        socket2.send(create_packet("guess what!"));
+        //auto packet2 = create_packet("chicken butt!!");
+        socket1.send_to(socket2.get_socket_address(), create_packet("chicken butt!!"));
 
         // since demo is async we wait for the messages to be processed
         std::this_thread::sleep_for(100ms);

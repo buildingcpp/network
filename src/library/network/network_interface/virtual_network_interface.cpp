@@ -50,7 +50,8 @@ bcpp::network::virtual_network_interface::virtual_network_interface
     ipAddress_(in_addr_any)
 {
     poller_ = poller_->create({});
-    workContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
+    sendWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
+    receiveWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
     stopped_ = false;
 }
 
@@ -66,7 +67,8 @@ bcpp::network::virtual_network_interface::virtual_network_interface
     {
         physicalNetworkInterfaceName_ = config.physicalNetworkInterfaceName_;
         poller_ = poller_->create(config.poller_);
-        workContractGroup_ = std::make_unique<system::blocking_work_contract_group>(config.capacity_);
+        sendWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(config.capacity_);
+        receiveWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(config.capacity_);
         stopped_ = false;
     }
 }
@@ -80,7 +82,8 @@ bcpp::network::virtual_network_interface::virtual_network_interface
     physicalNetworkInterfaceName_(other.physicalNetworkInterfaceName_),
     ipAddress_(other.ipAddress_),
     poller_(other.poller_),
-    workContractGroup_(std::move(other.workContractGroup_)),
+    sendWorkContractGroup_(std::move(other.sendWorkContractGroup_)),
+    receiveWorkContractGroup_(std::move(other.receiveWorkContractGroup_)),
     stopped_(other.stopped_.load())
 {
     other.physicalNetworkInterfaceName_ = {};
@@ -103,7 +106,8 @@ auto bcpp::network::virtual_network_interface::operator =
         physicalNetworkInterfaceName_ = other.physicalNetworkInterfaceName_;
         ipAddress_ = other.ipAddress_;
         poller_ = other.poller_;
-        workContractGroup_ = std::move(other.workContractGroup_);
+        sendWorkContractGroup_ = std::move(other.sendWorkContractGroup_);
+        receiveWorkContractGroup_ = std::move(other.receiveWorkContractGroup_);
         stopped_ = other.stopped_.load();
 
         other.physicalNetworkInterfaceName_ = {};
@@ -175,8 +179,10 @@ void bcpp::network::virtual_network_interface::stop
     if (wasRunning)
     {
         ipAddress_ = {};
-        workContractGroup_->stop();
-        workContractGroup_ = {};
+        receiveWorkContractGroup_->stop();
+        receiveWorkContractGroup_ = {};
+        sendWorkContractGroup_->stop();
+        sendWorkContractGroup_ = {};
         poller_ = {};
 
         // any work contracts that were surrendered in the previous step must not be 
@@ -196,24 +202,26 @@ auto bcpp::network::virtual_network_interface::open_socket
     typename S::event_handlers eventHandlers
 ) -> S
 {
-    return S(std::move(handle), config, eventHandlers, *workContractGroup_, poller_);
+    if constexpr (active_socket_concept<S>)
+        return S(std::move(handle), config, eventHandlers, *sendWorkContractGroup_, *receiveWorkContractGroup_, poller_);
+    else
+        return S(std::move(handle), config, eventHandlers, *receiveWorkContractGroup_, poller_);
 }
 
 
 //=============================================================================
-auto bcpp::network::virtual_network_interface::tcp_listen
+auto bcpp::network::virtual_network_interface::create_tcp_socket
 (
-    port_id localPortId,
     tcp_listener_socket::configuration config,
     tcp_listener_socket::event_handlers eventHandlers
 ) -> tcp_listener_socket
 {
-    return open_socket<tcp_listener_socket>(socket_address{ipAddress_, localPortId}, config, eventHandlers);
+    return open_socket<tcp_listener_socket>(socket_address{ipAddress_, config.portId_}, config, eventHandlers);
 }
 
 
 //=============================================================================
-auto bcpp::network::virtual_network_interface::tcp_accept
+auto bcpp::network::virtual_network_interface::accept_tcp_socket
 (
     system::file_descriptor fileDescriptor,
     tcp_socket::configuration config,
@@ -225,7 +233,7 @@ auto bcpp::network::virtual_network_interface::tcp_accept
 
 
 //=============================================================================
-auto bcpp::network::virtual_network_interface::tcp_connect
+auto bcpp::network::virtual_network_interface::create_tcp_socket
 (
     socket_address remoteSocketAddress,
     tcp_socket::configuration config,
@@ -239,35 +247,7 @@ auto bcpp::network::virtual_network_interface::tcp_connect
 
 
 //=============================================================================
-auto bcpp::network::virtual_network_interface::udp_connect
-(
-    port_id localPortId,
-    socket_address remoteSocketAddress,
-    udp_socket::configuration config,
-    udp_socket::event_handlers eventHandlers
-) -> udp_socket
-{
-    auto udpSocket = open_socket<udp_socket>(socket_address{ipAddress_, localPortId}, config, eventHandlers);
-    if (remoteSocketAddress.is_valid())
-        udpSocket.connect_to(remoteSocketAddress);
-    return udpSocket;
-}
-
-
-//=============================================================================
-auto bcpp::network::virtual_network_interface::udp_connect
-(
-    socket_address remoteSocketAddress,
-    udp_socket::configuration config,
-    udp_socket::event_handlers eventHandlers
-) -> udp_socket
-{
-    return udp_connect(port_id_any, remoteSocketAddress, config, eventHandlers);
-}
-
-
-//=============================================================================
-auto bcpp::network::virtual_network_interface::udp_connectionless
+auto bcpp::network::virtual_network_interface::create_udp_socket
 (
     port_id localPortId,
     udp_socket::configuration config,
@@ -279,13 +259,13 @@ auto bcpp::network::virtual_network_interface::udp_connectionless
 
 
 //=============================================================================
-auto bcpp::network::virtual_network_interface::udp_connectionless
+auto bcpp::network::virtual_network_interface::create_udp_socket
 (
     udp_socket::configuration config,
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    return udp_connectionless(port_id_any, config, eventHandlers);
+    return create_udp_socket(port_id_any, config, eventHandlers);
 }
 
 
@@ -328,7 +308,8 @@ void bcpp::network::virtual_network_interface::service_sockets
     std::chrono::nanoseconds duration
 )
 {
-    workContractGroup_->execute_next_contract(); // TODO: need to restore blocking mode ... duration);
+    receiveWorkContractGroup_->execute_next_contract(); // TODO: need to restore blocking mode ... duration);
+    sendWorkContractGroup_->execute_next_contract(); // TODO: need to restore blocking mode ... duration);
 }
 
 
@@ -337,7 +318,8 @@ void bcpp::network::virtual_network_interface::service_sockets
 (
 )
 {
-    workContractGroup_->execute_next_contract();
+    receiveWorkContractGroup_->execute_next_contract();
+    sendWorkContractGroup_->execute_next_contract();
 }
 
 
@@ -348,4 +330,5 @@ namespace bcpp::network
     template tcp_socket virtual_network_interface::open_socket(ip_address, tcp_socket::configuration, tcp_socket::event_handlers);
     template tcp_listener_socket virtual_network_interface::open_socket(socket_address, tcp_listener_socket::configuration, tcp_listener_socket::event_handlers);
     template udp_socket virtual_network_interface::open_socket(socket_address, udp_socket::configuration, udp_socket::event_handlers);
+
 }

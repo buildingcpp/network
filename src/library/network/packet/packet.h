@@ -24,7 +24,12 @@ namespace bcpp::network
         };
 
         packet(){}
-        
+
+        packet
+        ( 
+            std::span<element_type const>
+        );
+
         packet
         (
             event_handlers const &, 
@@ -66,6 +71,11 @@ namespace bcpp::network
             std::size_t
         );
 
+        std::size_t discard
+        (
+            std::size_t
+        );
+
         operator std::span<element_type const>() const;
 
     private:
@@ -77,6 +87,8 @@ namespace bcpp::network
         delete_handler           deleteHandler_{nullptr};
 
         std::size_t              size_{0};
+
+        std::size_t              begin_{0};
 
     };
 
@@ -91,7 +103,8 @@ inline bcpp::network::packet::packet
 ):
     buffer_(buffer), 
     deleteHandler_(eventHandler.deleteHandler_),
-    size_(buffer.size())
+    size_(buffer.size()),
+    begin_(0)
 {
 }
 
@@ -103,11 +116,13 @@ inline bcpp::network::packet::packet
 ):
     buffer_(other.buffer_),
     deleteHandler_(other.deleteHandler_),
-    size_(other.size_)
+    size_(other.size_),
+    begin_(other.begin_)
 {
     other.deleteHandler_ = nullptr;
     other.size_ = {};
     other.buffer_ = {};
+    other.begin_ = {};
 }
 
 
@@ -123,10 +138,12 @@ inline auto bcpp::network::packet::operator =
         buffer_ = other.buffer_;
         deleteHandler_ = other.deleteHandler_;
         size_ = other.size_;
+        begin_ = other.begin_;
 
         other.deleteHandler_ = nullptr;
         other.size_ = {};
         other.buffer_ = {};
+        other.begin_ = {};
     }
     return *this;
 }
@@ -155,7 +172,7 @@ inline auto bcpp::network::packet::begin
 (
 )
 {
-    return buffer_.begin();
+    return (buffer_.begin() + begin_);
 }
 
 
@@ -164,7 +181,7 @@ inline auto bcpp::network::packet::begin
 (
 ) const
 {
-    return buffer_.begin();
+    return (buffer_.begin() + begin_);
 }
 
 
@@ -236,6 +253,20 @@ inline bool bcpp::network::packet::resize
 
 
 //=============================================================================
+inline std::size_t bcpp::network::packet::discard
+(
+    std::size_t sizeToDiscard
+)
+{
+    if (sizeToDiscard > size_)
+        sizeToDiscard = size_;
+    size_ -= sizeToDiscard;
+    begin_ += sizeToDiscard;
+    return sizeToDiscard;
+}
+
+
+//=============================================================================
 inline void bcpp::network::packet::release
 (
 )
@@ -244,6 +275,7 @@ inline void bcpp::network::packet::release
         std::exchange(deleteHandler_, nullptr)(*this);
     size_ = {};
     buffer_ = {};
+    begin_ = {};
 }
 
 
@@ -252,5 +284,23 @@ inline bcpp::network::packet::operator std::span<element_type const>
 (
 ) const
 {
-    return buffer_;
+    return {begin(), size_};
+}
+
+
+//=============================================================================
+inline bcpp::network::packet::packet
+(
+    // because socket sends are async sending a plain old c string
+    // requires an allocation and a memcpy.
+    // for more optimal performance use an allocator and place messages
+    // in pre allocated buffers and then use the other packet ctor.
+    std::span<element_type const> message
+):
+    buffer_(new char[message.size()], message.size()), 
+    deleteHandler_([](auto const & p){delete [] p.data();}),
+    size_(message.size()),
+    begin_(0)
+{
+    std::copy_n(message.data(), message.size(), buffer_.data());
 }

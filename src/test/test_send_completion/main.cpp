@@ -7,6 +7,19 @@
 
 
 //=============================================================================
+auto get_network_interface
+(
+    bcpp::network::network_interface_name networkInterfaceName
+) -> bcpp::network::network_interface_configuration
+{
+    for (auto const & networkInterfaceConfiguration : bcpp::network::get_available_network_interfaces())
+        if (networkInterfaceConfiguration.name_ == networkInterfaceName)
+            return networkInterfaceConfiguration;
+    return {};
+}
+
+
+//=============================================================================
 int main
 (
     int,
@@ -21,7 +34,8 @@ int main
     std::atomic<bool> sendCompletion{false};
 
     std::cout << "create virtual network interface\n";
-    bcpp::network::virtual_network_interface virtualNetworkInterface({.physicalNetworkInterfaceName_ = "lo"});
+    auto networkInterfaceConfiguration = get_network_interface("lo");
+    bcpp::network::virtual_network_interface virtualNetworkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration});
     if (!virtualNetworkInterface.is_valid())
     {
         std::cerr << "Failed to create virtual network interface\n";

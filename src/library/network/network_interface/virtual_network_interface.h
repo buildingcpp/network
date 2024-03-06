@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./network_interface_configuration.h"
 #include "./network_interface_name.h"
 
 #include <include/non_movable.h>
@@ -27,9 +28,9 @@ namespace bcpp::network
 
         struct configuration
         {
-            network_interface_name  physicalNetworkInterfaceName_;
-            poller::configuration   poller_;
-            std::int64_t            capacity_{default_capacity};
+            network_interface_configuration     networkInterfaceConfiguration_;
+            poller::configuration               poller_;
+            std::int64_t                        capacity_{default_capacity};
         };
 
         virtual_network_interface();
@@ -125,9 +126,7 @@ namespace bcpp::network
             typename P::event_handlers
         );
 
-        network_interface_name                                  physicalNetworkInterfaceName_;
-        ip_address                                              ipAddress_;
-
+        network_interface_configuration                         networkInterfaceConfiguration_;
         std::shared_ptr<poller>                                 poller_;
         std::unique_ptr<system::blocking_work_contract_group>   sendWorkContractGroup_;
         std::unique_ptr<system::blocking_work_contract_group>   receiveWorkContractGroup_;

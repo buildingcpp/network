@@ -9,12 +9,11 @@
 auto select_network_interface
 (
     bool loopback
-) -> bcpp::network::network_interface_name
+) -> bcpp::network::network_interface_configuration
 {
-    std::string networkInterfaceName;
-    for (auto && [name, ipAddress, netmask] : bcpp::network::get_available_network_interfaces())
-        if (ipAddress.is_valid() && (ipAddress.is_loop_back() == loopback))
-            return name;
+    for (auto const & networkInterfaceConfiguration : bcpp::network::get_available_network_interfaces())
+        if (networkInterfaceConfiguration.loopback_ == loopback)
+            return networkInterfaceConfiguration;
     return {};
 }
 
@@ -30,16 +29,16 @@ int main
 
     // find a suitable network interface (a loop back interface for this example)
     auto useLoopback = true;
-    auto networkInterfaceName = select_network_interface(useLoopback);
-    if (networkInterfaceName.empty())
+    auto networkInterfaceConfiguration = select_network_interface(useLoopback);
+    if (!networkInterfaceConfiguration.ipAddress_.is_valid())
     {
         std::cerr << "Failed to locate suitable network interface for test\n";
         return -1;
     }
-    std::cout << "using network interface " << networkInterfaceName << "\n";
+    std::cout << "using network interface " << networkInterfaceConfiguration.name_ << "\n";
 
     // set up network interface
-    if (bcpp::network::virtual_network_interface networkInterface({.physicalNetworkInterfaceName_ = networkInterfaceName}); networkInterface.is_valid())
+    if (bcpp::network::virtual_network_interface networkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}); networkInterface.is_valid())
     {
         bcpp::network::socket_address multicastChannel = "239.0.0.1:3000"; 
         // set up threads

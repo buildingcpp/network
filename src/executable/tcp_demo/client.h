@@ -19,10 +19,10 @@ struct client :
 
     client
     (
-        bcpp::network::network_interface_name interfaceName,
+        bcpp::network::network_interface_configuration networkInterfaceConfiguration,
         bcpp::network::socket_address serverSocketAddress
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = interfaceName}),
+        networkInterface_({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}),
         socket_(networkInterface_.create_tcp_socket(
                 serverSocketAddress, {}, 
                 {

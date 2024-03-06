@@ -5,50 +5,13 @@
 #include <sys/types.h>
 #include <netdb.h>
 
-#include <ifaddrs.h>
-
-
-namespace
-{
-
-    //=============================================================================
-    bcpp::network::ip_address get_physical_network_interface
-    (
-        // for now, only ipv4
-        bcpp::network::network_interface_name interfaceName
-    )
-    {
-        bcpp::network::ip_address ipAddress;
-        ::ifaddrs * interfaceAddress = nullptr;
-
-        if (auto result = ::getifaddrs(&interfaceAddress); result == 0)
-        {
-            auto cur = interfaceAddress;
-            while (cur != nullptr)
-            {
-                if ((cur->ifa_addr != nullptr) && (cur->ifa_addr->sa_family == AF_INET) && (interfaceName == cur->ifa_name))
-                {
-                    ipAddress = {((struct sockaddr_in *)(cur->ifa_addr))->sin_addr};
-                    break;
-                }
-                cur = cur->ifa_next;
-            }
-        }
-
-        if (interfaceAddress != nullptr)
-            ::freeifaddrs(interfaceAddress);
-
-        return ipAddress;
-    }
-}
-
 
 //=============================================================================
 bcpp::network::virtual_network_interface::virtual_network_interface
 (
-):
-    ipAddress_(in_addr_any)
+)
 {
+    networkInterfaceConfiguration_.ipAddress_ = in_addr_any;
     poller_ = poller_->create({});
     sendWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
     receiveWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(default_capacity);
@@ -61,11 +24,10 @@ bcpp::network::virtual_network_interface::virtual_network_interface
 (
     configuration const & config
 ):
-    ipAddress_((config.physicalNetworkInterfaceName_.empty()) ? in_addr_any : get_physical_network_interface(config.physicalNetworkInterfaceName_))
+    networkInterfaceConfiguration_(config.networkInterfaceConfiguration_)
 {
-    if (ipAddress_.is_valid())
+    if (networkInterfaceConfiguration_.ipAddress_.is_valid())
     {
-        physicalNetworkInterfaceName_ = config.physicalNetworkInterfaceName_;
         poller_ = poller_->create(config.poller_);
         sendWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(config.capacity_);
         receiveWorkContractGroup_ = std::make_unique<system::blocking_work_contract_group>(config.capacity_);
@@ -79,15 +41,13 @@ bcpp::network::virtual_network_interface::virtual_network_interface
 (
     virtual_network_interface && other
 ):
-    physicalNetworkInterfaceName_(other.physicalNetworkInterfaceName_),
-    ipAddress_(other.ipAddress_),
+    networkInterfaceConfiguration_(other.networkInterfaceConfiguration_),
     poller_(other.poller_),
     sendWorkContractGroup_(std::move(other.sendWorkContractGroup_)),
     receiveWorkContractGroup_(std::move(other.receiveWorkContractGroup_)),
     stopped_(other.stopped_.load())
 {
-    other.physicalNetworkInterfaceName_ = {};
-    other.ipAddress_ = {};
+    other.networkInterfaceConfiguration_ = {};
     other.poller_ = {};
     other.stopped_ = true;
 }
@@ -103,15 +63,13 @@ auto bcpp::network::virtual_network_interface::operator =
     {
         stop();
 
-        physicalNetworkInterfaceName_ = other.physicalNetworkInterfaceName_;
-        ipAddress_ = other.ipAddress_;
+        networkInterfaceConfiguration_ = other.networkInterfaceConfiguration_;
         poller_ = other.poller_;
         sendWorkContractGroup_ = std::move(other.sendWorkContractGroup_);
         receiveWorkContractGroup_ = std::move(other.receiveWorkContractGroup_);
         stopped_ = other.stopped_.load();
 
-        other.physicalNetworkInterfaceName_ = {};
-        other.ipAddress_ = {};
+        other.networkInterfaceConfiguration_ = {};
         other.poller_ = {};
         other.stopped_ = true;
     }
@@ -133,7 +91,7 @@ bool bcpp::network::virtual_network_interface::is_valid
 (
 ) const
 {
-    return ipAddress_.is_valid();
+    return networkInterfaceConfiguration_.ipAddress_.is_valid();
 }
 
 
@@ -142,7 +100,7 @@ bool bcpp::network::virtual_network_interface::is_loop_back
 (
 ) const
 {
-    return (ipAddress_ == loop_back);
+    return (networkInterfaceConfiguration_.loopback_);
 }
 
 
@@ -151,7 +109,7 @@ auto bcpp::network::virtual_network_interface::get_ip_address
 (
 ) const -> ip_address
 {
-    return ipAddress_;
+    return networkInterfaceConfiguration_.ipAddress_;
 }
 
 
@@ -160,7 +118,7 @@ auto bcpp::network::virtual_network_interface::get_name
 (
 ) const -> network_interface_name const &
 {
-    return physicalNetworkInterfaceName_;
+    return networkInterfaceConfiguration_.name_;
 }
 
 
@@ -173,7 +131,7 @@ void bcpp::network::virtual_network_interface::stop
     // that are associated with the sockets that were created by this network interface.
     if (auto wasRunning = (stopped_.exchange(true) == false); wasRunning)
     {
-        ipAddress_ = {};
+        networkInterfaceConfiguration_ = {};
         receiveWorkContractGroup_->stop();
         receiveWorkContractGroup_ = {};
         sendWorkContractGroup_->stop();
@@ -211,7 +169,7 @@ auto bcpp::network::virtual_network_interface::create_tcp_socket
     tcp_listener_socket::event_handlers eventHandlers
 ) -> tcp_listener_socket
 {
-    return open_socket<tcp_listener_socket>(socket_address{ipAddress_, config.portId_}, config, eventHandlers);
+    return open_socket<tcp_listener_socket>(socket_address{networkInterfaceConfiguration_.ipAddress_, config.portId_}, config, eventHandlers);
 }
 
 
@@ -235,7 +193,7 @@ auto bcpp::network::virtual_network_interface::create_tcp_socket
     tcp_socket::event_handlers eventHandlers
 ) -> tcp_socket
 {
-    auto tcpSocket = open_socket<tcp_socket>(ipAddress_, config, eventHandlers);
+    auto tcpSocket = open_socket<tcp_socket>(networkInterfaceConfiguration_.ipAddress_, config, eventHandlers);
     tcpSocket.connect_to(remoteSocketAddress);
     return tcpSocket;
 }
@@ -249,7 +207,7 @@ auto bcpp::network::virtual_network_interface::create_udp_socket
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    return open_socket<udp_socket>(socket_address{ipAddress_, port_id_any}, config, eventHandlers);
+    return open_socket<udp_socket>(socket_address{networkInterfaceConfiguration_.ipAddress_, port_id_any}, config, eventHandlers);
 }
 
 

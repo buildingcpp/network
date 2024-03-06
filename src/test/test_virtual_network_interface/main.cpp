@@ -17,12 +17,12 @@ int main
         std::cerr << "no network interfaces detected\n";
         return -1;
     }
-    for (auto && [name, ipAddress, netmask] : availableNetworkInterfaces)
+    for (auto const & networkInterfaceConfiguration : availableNetworkInterfaces)
     {
-        bcpp::network::virtual_network_interface virtualNetworkInterface({.physicalNetworkInterfaceName_ = name});
+        bcpp::network::virtual_network_interface virtualNetworkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration});
         if (!virtualNetworkInterface.is_valid())
         {
-            std::cerr << "Failed to create virtual network interface " << name << "\n";
+            std::cerr << "Failed to create virtual network interface " << networkInterfaceConfiguration.name_ << "\n";
             return -1;
         }
     }

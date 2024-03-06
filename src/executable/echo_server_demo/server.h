@@ -16,10 +16,10 @@ struct echo_server : bcpp::non_movable, bcpp::non_copyable
 {
     echo_server
     (
-        bcpp::network::network_interface_name networkInterfaceName,
+        bcpp::network::network_interface_configuration networkInterfaceConfiguration,
         bcpp::network::port_id portId
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = networkInterfaceName}),
+        networkInterface_({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}),
         socket_(networkInterface_.create_tcp_socket({.portId_ = portId},
                 {.acceptHandler_ = [this](auto, auto fileDescriptor){sessions.push_back(std::make_unique<session>(networkInterface_, std::move(fileDescriptor)));}})),
         pollerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();}),

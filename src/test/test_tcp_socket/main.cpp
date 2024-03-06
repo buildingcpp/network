@@ -35,8 +35,9 @@ int main
     using namespace std::chrono;
     using namespace bcpp::network::literals;
 
+    // for this test we will use the default network interface and not specify one
     std::cout << "create virtual network interface\n";
-    bcpp::network::virtual_network_interface virtualNetworkInterface({.physicalNetworkInterfaceName_ = "lo"});
+    bcpp::network::virtual_network_interface virtualNetworkInterface;
     if (!virtualNetworkInterface.is_valid())
     {
         std::cerr << "Failed to create virtual network interface\n";

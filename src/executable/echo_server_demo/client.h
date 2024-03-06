@@ -15,10 +15,10 @@ struct echo_client : bcpp::non_movable, bcpp::non_copyable
 {
     echo_client
     (        
-        bcpp::network::network_interface_name networkInterfaceName,
+        bcpp::network::network_interface_configuration networkInterfaceConfiguration,
         bcpp::network::socket_address serverAddress
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = networkInterfaceName}),
+        networkInterface_({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}),
         socket_(networkInterface_.create_tcp_socket(serverAddress, {}, 
             {.receiveHandler_ = [&](auto, auto packet, auto)
             {

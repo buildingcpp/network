@@ -19,10 +19,10 @@ public:
 
     server
     (        
-        bcpp::network::network_interface_name interfaceName,
+        bcpp::network::network_interface_configuration networkInterfaceConfiguration,
         bcpp::network::port_id portId
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = interfaceName})
+        networkInterface_({.networkInterfaceConfiguration_ = networkInterfaceConfiguration})
     {
         // we will use two threads for our example.  one will be responsible for polling the network interface
         // the other will be responsible for all of the async socket recv and tcp accepts

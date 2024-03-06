@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <net/if.h>
 
 
 //=============================================================================
@@ -25,9 +26,9 @@ auto bcpp::network::get_ip_address_from_hostname
 //=============================================================================
 auto bcpp::network::get_available_network_interfaces
 (
-) -> std::vector<network_interface_info>
+) -> std::vector<network_interface_configuration>
 {
-    std::vector<network_interface_info> interfaces;
+    std::vector<network_interface_configuration> interfaces;
 
     bcpp::network::ip_address ipAddress;
     ::ifaddrs * interfaceAddress = nullptr;
@@ -44,6 +45,11 @@ auto bcpp::network::get_available_network_interfaces
                             .name_ = cur->ifa_name,
                             .ipAddress_ = {((struct sockaddr_in *)(cur->ifa_addr))->sin_addr},
                             .netmask_ = {((struct sockaddr_in *)(cur->ifa_netmask))->sin_addr},
+                            .up_ = (((cur->ifa_flags) & IFF_UP) == IFF_UP),
+                            .loopback_ = (((cur->ifa_flags) & IFF_LOOPBACK) == IFF_LOOPBACK),
+                            .broadcast_ = (((cur->ifa_flags) & IFF_BROADCAST) == IFF_BROADCAST),
+                            .multicast_ = (((cur->ifa_flags) & IFF_MULTICAST) == IFF_MULTICAST),
+                            .running_ = (((cur->ifa_flags) & IFF_RUNNING) == IFF_RUNNING)
                         });
             }
             cur = cur->ifa_next;

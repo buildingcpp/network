@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./network_interface_configuration.h"
 #include "./network_interface_name.h"
 
 #include <include/non_movable.h>
@@ -8,11 +9,9 @@
 #include <library/network/poller/poller.h>
 #include <library/network/socket/active_socket.h>
 #include <library/network/socket/passive_socket.h>
-#include <library/network/stream/stream.h>
 
 #include <library/system.h>
 
-#include <mutex>
 #include <memory>
 #include <chrono>
 
@@ -29,9 +28,9 @@ namespace bcpp::network
 
         struct configuration
         {
-            network_interface_name  physicalNetworkInterfaceName_;
-            poller::configuration   poller_;
-            std::int64_t            capacity_{default_capacity};
+            network_interface_configuration     networkInterfaceConfiguration_;
+            poller::configuration               poller_;
+            std::int64_t                        capacity_{default_capacity};
         };
 
         virtual_network_interface();
@@ -53,50 +52,34 @@ namespace bcpp::network
 
         ~virtual_network_interface();
 
-        tcp_listener_socket tcp_listen
+        tcp_listener_socket create_tcp_socket
         (
-            port_id,
             tcp_listener_socket::configuration,
             tcp_listener_socket::event_handlers
         );
 
-        tcp_socket tcp_accept
+        tcp_socket accept_tcp_socket
         (
             system::file_descriptor,
             tcp_socket::configuration,
             tcp_socket::event_handlers
         );
 
-        tcp_socket tcp_connect
+        tcp_socket create_tcp_socket
         (
             socket_address,
             tcp_socket::configuration,
             tcp_socket::event_handlers
         );
 
-        udp_socket udp_connect
-        (
-            port_id,
-            socket_address,
-            udp_socket::configuration,
-            udp_socket::event_handlers
-        );
-
-        udp_socket udp_connect
-        (
-            socket_address,
-            udp_socket::configuration,
-            udp_socket::event_handlers
-        );
-
-        udp_socket udp_connectionless
+        udp_socket create_udp_socket
         (
             port_id,
             udp_socket::configuration,
             udp_socket::event_handlers
         );
 
-        udp_socket udp_connectionless
+        udp_socket create_udp_socket
         (
             udp_socket::configuration,
             udp_socket::event_handlers
@@ -107,14 +90,6 @@ namespace bcpp::network
             socket_address,
             udp_socket::configuration,
             udp_socket::event_handlers
-        );
-
-        template <socket_concept P>
-        stream<P> open_stream
-        (
-            socket_address,
-            typename stream<P>::configuration const &,
-            typename stream<P>::event_handlers const & 
         );
 
         void poll();
@@ -151,29 +126,13 @@ namespace bcpp::network
             typename P::event_handlers
         );
 
-        network_interface_name                                  physicalNetworkInterfaceName_;
-        ip_address                                              ipAddress_;
-
+        network_interface_configuration                         networkInterfaceConfiguration_;
         std::shared_ptr<poller>                                 poller_;
-        std::unique_ptr<system::blocking_work_contract_group>   workContractGroup_;
+        std::unique_ptr<system::blocking_work_contract_group>   sendWorkContractGroup_;
+        std::unique_ptr<system::blocking_work_contract_group>   receiveWorkContractGroup_;
 
         std::atomic<bool>                                       stopped_{true};
-
-        std::mutex mutable                                      mutex_;
-
+        
     }; // class virtual_network_interface
 
 } // namespace bcpp::network
-
-
-//=============================================================================
-template <bcpp::network::socket_concept P>
-auto bcpp::network::virtual_network_interface::open_stream
-(
-    socket_address remoteSocketAddress,
-    typename stream<P>::configuration const & config,
-    typename stream<P>::event_handlers const & eventHandlers
-) -> bcpp::network::stream<P>
-{
-    return stream<P>(remoteSocketAddress, config, eventHandlers, this, *workContractGroup_);
-}

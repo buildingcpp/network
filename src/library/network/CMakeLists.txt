@@ -14,7 +14,6 @@ add_library(network
     ./socket/private/socket_base_impl.cpp
     ./socket/private/passive_socket_impl.cpp
     ./socket/private/active_socket_impl.cpp
-    ./stream/stream.cpp
 )
 
 

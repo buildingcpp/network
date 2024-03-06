@@ -9,7 +9,6 @@
 #include <include/file_descriptor.h>
 #include <library/network/socket/socket.h>
 
-#include <mutex>
 #include <vector>
 #include <memory>
 #include <chrono>
@@ -39,13 +38,13 @@ namespace bcpp::network
 
         ~poller();
 
-        template <socket_impl_concept S>
+        template <concept::socket_impl S>
         bool register_socket
         (
             S &
         );
 
-        template <socket_impl_concept S>
+        template <concept::socket_impl S>
         bool unregister_socket
         (
             S &

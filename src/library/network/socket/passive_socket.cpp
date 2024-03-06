@@ -10,7 +10,8 @@ bcpp::network::passive_socket::socket
     event_handlers const & eventHandlers,
     system::blocking_work_contract_group & workContractGroup,
     std::shared_ptr<poller> & p
-)
+) 
+try
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             socketAddress,
@@ -24,6 +25,11 @@ bcpp::network::passive_socket::socket
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
+}
+catch (std::exception const & exception)
+{
+    std::cerr << "passive_socket ctor failure.  reason: " << exception.what() << "\n";
+    impl_.reset();
 }
 
 

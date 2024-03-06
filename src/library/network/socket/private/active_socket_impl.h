@@ -7,6 +7,7 @@
 #include <library/network/packet/packet.h>
 
 #include <include/io_mode.h>
+#include <include/spsc_fixed_queue.h>
 #include <library/system.h>
 
 #include <functional>
@@ -44,9 +45,12 @@ namespace bcpp::network
 
         struct configuration
         {
+            static auto constexpr default_send_queue_capacity = ((1 << 20));//((1 << 10) * 8);
+
             std::size_t     socketReceiveBufferSize_{0};
             std::size_t     socketSendBufferSize_{0};
             std::size_t     readBufferSize_{0};
+            std::size_t     sendQueueSize_{default_send_queue_capacity};
             system::io_mode ioMode_{system::io_mode::read_write};
 
             // udp specific
@@ -60,6 +64,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             std::shared_ptr<poller> const &
         );
 
@@ -69,35 +74,44 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::blocking_work_contract_group &,
+            system::blocking_work_contract_group &,
             std::shared_ptr<poller> const &
-        ) requires (tcp_protocol_concept<P>);
+        ) requires (tcp_concept<P>);
 
         virtual ~socket_impl() = default;
 
-        std::tuple<std::span<char const>, std::int32_t> send
+        bool send
         (
-            std::span<char const>
-        ) requires (tcp_protocol_concept<P>);
+            packet &&
+        );
 
-        std::tuple<std::span<char const>, std::int32_t> send
+        bool send
         (
-            std::span<char const>
-        ) requires (udp_protocol_concept<P>);
+            packet &&,
+            send_completion_token
+        );
 
-        std::tuple<std::span<char const>, std::int32_t> send_to
+        bool send_to
         (
             socket_address,
-            std::span<char const>
-        ) requires (udp_protocol_concept<P>);
+            packet &&
+        ) requires (udp_concept<P>);
+
+        bool send_to
+        (
+            socket_address,
+            packet &&,
+            send_completion_token
+        ) requires (udp_concept<P>);
 
         connect_result connect_to
         (
             socket_address const &
         ) noexcept;
 
-        void receive() requires (udp_protocol_concept<P>);
+        void receive() requires (udp_concept<P>);
 
-        void receive() requires (tcp_protocol_concept<P>);
+        void receive() requires (tcp_concept<P>);
 
         void destroy();
 
@@ -108,7 +122,7 @@ namespace bcpp::network
         connect_result join
         (
             ip_address
-        ) requires (udp_protocol_concept<P>);
+        ) requires (udp_concept<P>);
 
     private:
 
@@ -121,6 +135,8 @@ namespace bcpp::network
         void on_hang_up() override;
 
         void on_peer_hang_up() override;
+
+        void execute_next_send();
 
         std::size_t                                         readBufferSize_;
 
@@ -137,6 +153,23 @@ namespace bcpp::network
         event_handlers::hang_up_handler                     hangUpHandler_;
 
         event_handlers::peer_hang_up_handler                peerHangUpHandler_;
+
+        struct send_info 
+        {
+            send_info() = default;
+            send_info(packet p, send_completion_token sendCompletionToken, socket_address destination):
+                packet_(std::move(p)), sendToken_(sendCompletionToken), destination_(destination){}
+            send_info(send_info &&) = default;
+            send_info & operator = (send_info &&) = default;
+
+            packet          packet_;
+            send_completion_token      sendToken_;
+            socket_address  destination_;
+        };
+
+        spsc_fixed_queue<send_info>                         sendQueue_;
+
+        system::blocking_work_contract                      sendContract_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

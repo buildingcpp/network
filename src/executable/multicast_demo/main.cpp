@@ -9,12 +9,11 @@
 auto select_network_interface
 (
     bool loopback
-) -> bcpp::network::network_interface_name
+) -> bcpp::network::network_interface_configuration
 {
-    std::string networkInterfaceName;
-    for (auto && [name, ipAddress, netmask] : bcpp::network::get_available_network_interfaces())
-        if (ipAddress.is_valid() && (ipAddress.is_loop_back() == loopback))
-            return name;
+    for (auto const & networkInterfaceConfiguration : bcpp::network::get_available_network_interfaces())
+        if (networkInterfaceConfiguration.loopback_ == loopback)
+            return networkInterfaceConfiguration;
     return {};
 }
 
@@ -30,16 +29,16 @@ int main
 
     // find a suitable network interface (a loop back interface for this example)
     auto useLoopback = true;
-    auto networkInterfaceName = select_network_interface(useLoopback);
-    if (networkInterfaceName.empty())
+    auto networkInterfaceConfiguration = select_network_interface(useLoopback);
+    if (!networkInterfaceConfiguration.ipAddress_.is_valid())
     {
         std::cerr << "Failed to locate suitable network interface for test\n";
         return -1;
     }
-    std::cout << "using network interface " << networkInterfaceName << "\n";
+    std::cout << "using network interface " << networkInterfaceConfiguration.name_ << "\n";
 
     // set up network interface
-    if (bcpp::network::virtual_network_interface networkInterface({.physicalNetworkInterfaceName_ = networkInterfaceName}); networkInterface.is_valid())
+    if (bcpp::network::virtual_network_interface networkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}); networkInterface.is_valid())
     {
         bcpp::network::socket_address multicastChannel = "239.0.0.1:3000"; 
         // set up threads
@@ -60,7 +59,8 @@ int main
         for (auto & receiver : receivers)
             receiver = networkInterface.multicast_join(multicastChannel, {}, 
                     {
-                        .receiveHandler_ = [id = receiverId++](auto, auto packet, auto)
+                        .receiveHandler_ = [id = receiverId++, expected = 0]  
+                        (auto, auto packet, auto)mutable
                                 {
                                     // special print function with locking just so that demo output doesn't get all mashed up
                                     auto print = [](std::string_view const input)
@@ -69,7 +69,12 @@ int main
                                                 std::lock_guard lockGuard(mutex);
                                                 std::cout << input << '\n';
                                             };
-                                    print(fmt::format("receiver #{} got multicast packet. data = {}", id, std::string_view(packet.data(), packet.size())));
+                                    auto received = std::atoi(packet.data());
+                                    if (expected != received)
+                                        print(fmt::format("*** Expected {} but got {}", expected, received));
+                                    print(fmt::format("receiver #{} got multicast packet - data = {}", 
+                                            id, std::string_view(packet.data(), packet.size())));
+                                    expected = received + 1;
                                 },
                         .packetAllocationHandler_ = [](bcpp::network::socket_id, std::size_t capacity)
                                 {
@@ -79,11 +84,13 @@ int main
                     });
 
         // set up multicast sender socket and then send messages
-        auto sender = networkInterface.udp_connect(multicastChannel, {}, {});
-        for (auto i = 0; i < 1024; ++i)
+        auto sender = networkInterface.create_udp_socket({}, {});
+        sender.connect_to(multicastChannel);
+        for (auto i = 0; i < 8192; ++i)
         {
-            sender.send(fmt::format("this is a multicast message # {}", i));
-            std::this_thread::sleep_for(10us); 
+            bcpp::network::packet p(fmt::format("{}\0", i));
+            sender.send(std::move(p));
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         // demo is async so give it a moment to complete

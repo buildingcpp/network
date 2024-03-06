@@ -1,10 +1,8 @@
 #pragma once
 
 #include <library/network/socket/socket_id.h>
-
+#include <library/network/socket/connect_result.h>
 #include <library/network/poller/poller.h>
-#include <library/network/socket/return_code/connect_result.h>
-
 #include <library/network/ip/socket_address.h>
 #include <include/file_descriptor.h>
 #include <include/io_mode.h>
@@ -103,7 +101,7 @@ namespace bcpp::network
     protected:
 
         // unfortunate
-        friend poller;
+        friend class poller;
 
         bool set_synchronicity
         (
@@ -136,7 +134,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        system::blocking_work_contract      workContract_;
+        system::blocking_work_contract      receiveContract_;
 
     }; // class socket_base_impl
 

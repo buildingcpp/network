@@ -7,12 +7,11 @@
 auto select_network_interface
 (
     bool loopback
-) -> bcpp::network::network_interface_name
+) -> bcpp::network::network_interface_configuration
 {
-    std::string networkInterfaceName;
-    for (auto && [name, ipAddress, netmask] : bcpp::network::get_available_network_interfaces())
-        if (ipAddress.is_valid() && (ipAddress.is_loop_back() == loopback))
-            return name;
+    for (auto const & networkInterfaceConfiguration : bcpp::network::get_available_network_interfaces())
+        if (networkInterfaceConfiguration.loopback_ == loopback)
+            return networkInterfaceConfiguration;
     return {};
 }
 
@@ -28,15 +27,15 @@ int main
 
     // find a suitable network interface (a non loop back interface for this example)
     auto useLoopback = false;
-    auto networkInterfaceName = select_network_interface(useLoopback);
-    if (networkInterfaceName.empty())
+    auto networkInterfaceConfiguration = select_network_interface(useLoopback);
+    if (!networkInterfaceConfiguration.ipAddress_.is_valid())
     {
         std::cerr << "Failed to locate suitable network interface for test\n";
         return -1;
     }
-    std::cout << "using network interface " << networkInterfaceName << "\n";
+    std::cout << "using network interface " << networkInterfaceConfiguration.name_ << "\n";
 
-    if (bcpp::network::virtual_network_interface networkInterface({.physicalNetworkInterfaceName_ = networkInterfaceName}); networkInterface.is_valid())
+    if (bcpp::network::virtual_network_interface networkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}); networkInterface.is_valid())
     {
         // set up threads
         bcpp::system::thread_pool threadPool
@@ -56,24 +55,28 @@ int main
                 };
 
         // create a standard (connectionless) UDP socket
-        auto socket1 = networkInterface.udp_connectionless({/*default configuration for this demo*/}, 
+        auto socket1 = networkInterface.create_udp_socket({/*default configuration for this demo*/}, 
                 {.receiveHandler_ = [](auto socketId, auto packet, auto senderSocketAddress){std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress <<
                 ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";}});
 
-        auto udpStream = networkInterface.open_stream<bcpp::network::udp_socket>(socket1.get_socket_address(), 
+        auto socket2 = networkInterface.create_udp_socket( 
                 {},
                 {
                     .receiveHandler_ = []
                             (
-                                auto const & udpStream, 
-                                auto packet
+                                auto socketId, 
+                                auto packet,
+                                auto senderSocketAddress
                             )
                             {
-                                std::cout << "udp stream " << udpStream.get_socket_address() << " received message from " << udpStream.get_peer_socket_address() << ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";
+                                std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress << ".  Message is \"" << std::string_view((char const *)packet.data(), packet.size()) << "\"\n";
                             }
                 });
-        udpStream.send(create_packet("guess what!"));
-        socket1.send_to(udpStream.get_socket_address(), create_packet("chicken butt!!"));
+        socket2.connect_to(socket1.get_socket_address());
+        //auto packet1 = create_packet("guess what!");
+        socket2.send(create_packet("guess what!"));
+        //auto packet2 = create_packet("chicken butt!!");
+        socket1.send_to(socket2.get_socket_address(), create_packet("chicken butt!!"));
 
         // since demo is async we wait for the messages to be processed
         std::this_thread::sleep_for(100ms);

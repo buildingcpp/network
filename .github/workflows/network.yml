@@ -35,3 +35,4 @@ jobs:
           ./bin/network/test_virtual_network_interface
           ./bin/network/test_tcp_socket
           ./bin/network/test_udp_socket
+          ./bin/network/test_send_completion

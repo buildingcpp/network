@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <concepts>
+#include <type_traits>
 
 
 namespace bcpp::network
@@ -21,12 +23,12 @@ namespace bcpp::network
     //=========================================================================
     // alias for udp based sockets
     template <network_transport_protocol T>
-    concept udp_protocol_concept = (T == network_transport_protocol::udp);
+    concept udp_concept = (T == network_transport_protocol::udp);
 
 
     //=========================================================================
     // alias for tcp based sockets
     template <network_transport_protocol T>
-    concept tcp_protocol_concept = (T == network_transport_protocol::tcp);
-    
+    concept tcp_concept = (T == network_transport_protocol::tcp);
+
 } // namespace bcpp::network

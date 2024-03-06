@@ -16,11 +16,11 @@ struct echo_server : bcpp::non_movable, bcpp::non_copyable
 {
     echo_server
     (
-        bcpp::network::network_interface_name networkInterfaceName,
+        bcpp::network::network_interface_configuration networkInterfaceConfiguration,
         bcpp::network::port_id portId
     ):
-        networkInterface_({.physicalNetworkInterfaceName_ = networkInterfaceName}),
-        socket_(networkInterface_.tcp_listen(portId, {},
+        networkInterface_({.networkInterfaceConfiguration_ = networkInterfaceConfiguration}),
+        socket_(networkInterface_.create_tcp_socket({.portId_ = portId},
                 {.acceptHandler_ = [this](auto, auto fileDescriptor){sessions.push_back(std::make_unique<session>(networkInterface_, std::move(fileDescriptor)));}})),
         pollerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();}),
         workerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.service_sockets();}){}
@@ -30,7 +30,8 @@ struct echo_server : bcpp::non_movable, bcpp::non_copyable
     struct session : non_movable, non_copyable
     {
         session(bcpp::network::virtual_network_interface & networkInterface, bcpp::system::file_descriptor fileDescriptor):
-            tcpSocket_(networkInterface.tcp_accept(std::move(fileDescriptor), {}, {.receiveHandler_ = [this](auto, auto packet, auto){tcpSocket_.send(packet);}})){}
+            tcpSocket_(networkInterface.accept_tcp_socket(std::move(fileDescriptor), {}, 
+                    {.receiveHandler_ = [this](auto, auto packet, auto){tcpSocket_.send(std::move(packet));}})){}
         bcpp::network::tcp_socket tcpSocket_;
     };
 

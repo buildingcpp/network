@@ -1,7 +1,6 @@
 #pragma once
 
 #include "./network_interface/virtual_network_interface.h"
-#include "./network_interface/network_interface_info.h"
 
 #include <string>
 #include <vector>
@@ -15,6 +14,6 @@ namespace bcpp::network
         std::string hostname
     );
 
-    std::vector<network_interface_info> get_available_network_interfaces();
+    std::vector<network_interface_configuration> get_available_network_interfaces();
 
 }

@@ -63,13 +63,13 @@ namespace bcpp::network
         return std::to_string(portId.get());     
     }
 
+
+    namespace literals
+    {
+        static constexpr port_id operator""_port(unsigned long long int value){return port_id(value);}
+    }
+
 } // namespace bcpp::network
-
-
-namespace bcpp::literals
-{
-    static constexpr network::port_id operator""_port(unsigned long long int value){return network::port_id(value);}
-}
 
 
 //=============================================================================

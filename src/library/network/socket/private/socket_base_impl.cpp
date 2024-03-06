@@ -1,7 +1,5 @@
 #include "./socket_base_impl.h"
 
-#include <library/network/exception/exception.h>
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -13,6 +11,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <exception>
 
 
 //=============================================================================
@@ -27,19 +26,19 @@ bcpp::network::socket_base_impl::socket_base_impl
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
-    workContract_(std::move(workContract))
+    receiveContract_(std::move(workContract))
 {
     if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
-        throw socket_option_exception("reuse address failure");
+        throw std::runtime_error("reuse address failure");
     if (!socketAddress.is_multicast())
     {
         bind(socketAddress);
         socketAddress_ = get_socket_name();
     }
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
-        throw socket_configuration_exception("set non_blocking failure");
+        throw std::runtime_error("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
-        throw socket_configuration_exception("set_io_mode failure");
+        throw std::runtime_error("set_io_mode failure");
 }
 catch (std::exception const & exception)
 {
@@ -62,14 +61,14 @@ bcpp::network::socket_base_impl::socket_base_impl
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
-    workContract_(std::move(workContract))
+    receiveContract_(std::move(workContract))
 {
     if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
-        throw socket_option_exception("reuse address failure");
+        throw std::runtime_error("reuse address failure");
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
-        throw socket_configuration_exception("set non_blocking failure");
+        throw std::runtime_error("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
-        throw socket_configuration_exception("set_io_mode failure");
+        throw std::runtime_error("set_io_mode failure");
     socketAddress_ = get_socket_name();
 }
 catch (std::exception const &)
@@ -97,7 +96,7 @@ void bcpp::network::socket_base_impl::on_polled
 (
 )
 {
-    workContract_.schedule();
+    receiveContract_.schedule();
 }
 
 
@@ -131,11 +130,11 @@ void bcpp::network::socket_base_impl::bind
 )
 {
     if (!fileDescriptor_.is_valid())
-        throw bind_exception("invalid file descriptor");
+        throw std::runtime_error("invalid file descriptor");
     ::sockaddr_in sockAddrIn = socketAddress;
     sockAddrIn.sin_family = AF_INET;
     if (::bind(fileDescriptor_.get(), (sockaddr const *)&sockAddrIn, sizeof(sockAddrIn)) == -1)
-        throw bind_exception("bind_error");
+        throw std::runtime_error("bind_error");
     socketAddress_ = get_socket_name();
 }
 

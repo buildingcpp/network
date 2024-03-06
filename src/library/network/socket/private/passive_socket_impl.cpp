@@ -47,9 +47,9 @@ void bcpp::network::passive_socket_impl::destroy
     // use a raw 'this' 
 )
 {
-    if (workContract_.is_valid())
+    if (receiveContract_.is_valid())
     {
-        workContract_.release();
+        receiveContract_.release();
     }
     else
     {

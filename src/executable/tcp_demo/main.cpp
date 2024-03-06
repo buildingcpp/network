@@ -27,7 +27,7 @@ int main
     char **
 )
 {
-    using namespace bcpp::literals;
+    using namespace bcpp::network::literals;
     using namespace std::chrono;
 
     // find a suitable network interface (a non loop back interface for this example)

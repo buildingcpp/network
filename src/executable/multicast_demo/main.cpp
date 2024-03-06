@@ -60,7 +60,8 @@ int main
         for (auto & receiver : receivers)
             receiver = networkInterface.multicast_join(multicastChannel, {}, 
                     {
-                        .receiveHandler_ = [id = receiverId++](auto, auto packet, auto)
+                        .receiveHandler_ = [id = receiverId++, expected = 0]  
+                        (auto, auto packet, auto)mutable
                                 {
                                     // special print function with locking just so that demo output doesn't get all mashed up
                                     auto print = [](std::string_view const input)
@@ -69,7 +70,12 @@ int main
                                                 std::lock_guard lockGuard(mutex);
                                                 std::cout << input << '\n';
                                             };
-                                    print(fmt::format("receiver #{} got multicast packet. data = {}", id, std::string_view(packet.data(), packet.size())));
+                                    auto received = std::atoi(packet.data());
+                                    if (expected != received)
+                                        print(fmt::format("*** Expected {} but got {}", expected, received));
+                                    print(fmt::format("receiver #{} got multicast packet - data = {}", 
+                                            id, std::string_view(packet.data(), packet.size())));
+                                    expected = received + 1;
                                 },
                         .packetAllocationHandler_ = [](bcpp::network::socket_id, std::size_t capacity)
                                 {
@@ -81,11 +87,11 @@ int main
         // set up multicast sender socket and then send messages
         auto sender = networkInterface.create_udp_socket({}, {});
         sender.connect_to(multicastChannel);
-        for (auto i = 0; i < 1024; ++i)
+        for (auto i = 0; i < 8192; ++i)
         {
-            bcpp::network::packet p(fmt::format("this is a multicast message # {}", i));
+            bcpp::network::packet p(fmt::format("{}\0", i));
             sender.send(std::move(p));
-            std::this_thread::sleep_for(10us); 
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         // demo is async so give it a moment to complete

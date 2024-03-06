@@ -12,7 +12,8 @@ bcpp::network::active_socket<P>::socket
     system::blocking_work_contract_group & sendWorkContractGroup,
     system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
-) requires (udp_concept<P>)
+) requires (udp_concept<P>) 
+try
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             socketAddress, 
@@ -25,7 +26,6 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
-                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
@@ -34,6 +34,11 @@ bcpp::network::active_socket<P>::socket
             },
             sendWorkContractGroup, receiveWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
+}
+catch (std::exception const & exception)
+{
+    std::cerr << "active_socket ctor failure.  reason: " << exception.what() << "\n";
+    impl_.reset();
 }
 
 
@@ -48,6 +53,7 @@ bcpp::network::active_socket<P>::socket
     system::blocking_work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
 ) requires (tcp_concept<P>)
+try 
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             {ipAddress}, 
@@ -60,7 +66,6 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
-                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
@@ -69,6 +74,11 @@ bcpp::network::active_socket<P>::socket
             },
             sendWorkContractGroup, receiveWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
+}
+catch (std::exception const & exception)
+{
+    std::cerr << "active_socket ctor failure.  reason: " << exception.what() << "\n";
+    impl_.reset();
 }
 
 
@@ -83,6 +93,7 @@ bcpp::network::active_socket<P>::socket
     system::blocking_work_contract_group & recevieWorkContractGroup,
     std::shared_ptr<poller> & p
 ) requires (tcp_concept<P>)
+try 
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
@@ -95,7 +106,6 @@ bcpp::network::active_socket<P>::socket
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.pollErrorHandler_,
-                eventHandlers.sendHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_,
@@ -104,6 +114,11 @@ bcpp::network::active_socket<P>::socket
             },
             sendWorkContractGroup, recevieWorkContractGroup, p), 
             [](auto * impl){impl->destroy();}));
+}
+catch (std::exception const & exception)
+{
+    std::cerr << "active_socket ctor failure.  reason: " << exception.what() << "\n";
+    impl_.reset();
 }
 
 
@@ -146,10 +161,10 @@ template <bcpp::network::network_transport_protocol P>
 bool bcpp::network::active_socket<P>::send
 (
     packet && data,
-    send_token sendToken
+    send_completion_token sendCompletionToken
 )
 {
-    return (impl_) ? impl_->send(std::move(data), sendToken) : false;
+    return (impl_) ? impl_->send(std::move(data), sendCompletionToken) : false;
 }
 
 
@@ -172,11 +187,11 @@ bool bcpp::network::active_socket<P>::send_to
 (
     socket_address destinationSocketAddress,
     packet && data,
-    send_token sendToken
+    send_completion_token sendCompletionToken
 )
 requires (udp_concept<P>)
 {
-    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(data), sendToken) : false;
+    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(data), sendCompletionToken) : false;
 }
 
 

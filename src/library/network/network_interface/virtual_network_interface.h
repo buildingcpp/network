@@ -8,11 +8,9 @@
 #include <library/network/poller/poller.h>
 #include <library/network/socket/active_socket.h>
 #include <library/network/socket/passive_socket.h>
-#include <library/network/stream/stream.h>
 
 #include <library/system.h>
 
-#include <mutex>
 #include <memory>
 #include <chrono>
 
@@ -92,15 +90,7 @@ namespace bcpp::network
             udp_socket::configuration,
             udp_socket::event_handlers
         );
-/*
-        template <network_transport_protocol T>
-        stream<T> open_stream
-        (
-            socket_address,
-            typename stream<T>::configuration const &,
-            typename stream<T>::event_handlers const & 
-        );
-*/
+
         void poll();
 
         void poll
@@ -143,23 +133,7 @@ namespace bcpp::network
         std::unique_ptr<system::blocking_work_contract_group>   receiveWorkContractGroup_;
 
         std::atomic<bool>                                       stopped_{true};
-
-        std::mutex mutable                                      mutex_;
-
+        
     }; // class virtual_network_interface
 
 } // namespace bcpp::network
-
-/*
-//=============================================================================
-template <bcpp::network::network_transport_protocol T>
-auto bcpp::network::virtual_network_interface::open_stream
-(
-    socket_address remoteSocketAddress,
-    typename stream<T>::configuration const & config,
-    typename stream<T>::event_handlers const & eventHandlers
-) -> bcpp::network::stream<T>
-{
-    return stream<T>(remoteSocketAddress, config, eventHandlers, this, *workContractGroup_);
-}
-*/

@@ -30,14 +30,13 @@ bcpp::network::active_socket_impl<P>::socket_impl
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             receiveWorkContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     poller_(p),
-    sendHandler_(eventHandlers.sendHandler_ ? eventHandlers.sendHandler_ : typename event_handlers::send_handler()),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
             [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
     sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
-    sendWorkContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
+    sendContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {
     p->register_socket(*this);
     if constexpr (tcp_concept<P>)
@@ -74,14 +73,13 @@ bcpp::network::active_socket_impl<P>::socket_impl
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             receiveWorkContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     poller_(p),
-    sendHandler_(eventHandlers.sendHandler_ ? eventHandlers.sendHandler_ : typename event_handlers::send_handler()),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
             [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
     sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
-    sendWorkContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
+    sendContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {
     p->register_socket(*this);
     readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
@@ -221,12 +219,12 @@ template <bcpp::network::network_transport_protocol P>
 bool bcpp::network::active_socket_impl<P>::send
 (
     packet && data,
-    send_token sendToken
+    send_completion_token sendCompletionToken
 )
 {
-    if (auto queued = sendQueue_.emplace(std::move(data), sendToken, socket_address{}); queued)
+    if (auto queued = sendQueue_.emplace(std::move(data), sendCompletionToken, socket_address{}); queued)
     {
-        sendWorkContract_.schedule();
+        sendContract_.schedule();
         return true;
     }
     return false;
@@ -252,13 +250,13 @@ bool bcpp::network::active_socket_impl<P>::send_to
 (
     socket_address destination,
     packet && data,
-    send_token sendToken
+    send_completion_token sendCompletionToken
 )
 requires (udp_concept<P>) 
 {
-    if (auto queued = sendQueue_.emplace(std::move(data), sendToken, destination); queued)
+    if (auto queued = sendQueue_.emplace(std::move(data), sendCompletionToken, destination); queued)
     {
-        sendWorkContract_.schedule();
+        sendContract_.schedule();
         return true;
     }
     return false;
@@ -273,7 +271,7 @@ void bcpp::network::active_socket_impl<P>::execute_next_send
 { 
     if constexpr (udp_concept<P>)
     {
-        auto & [packet, sendToken, destination] = sendQueue_.front();
+        auto & [packet, sendCompletionToken, destination] = sendQueue_.front();
         ::sockaddr_in sockAddr = destination;
         sockAddr.sin_family = AF_INET;
         auto p = destination.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
@@ -286,15 +284,14 @@ void bcpp::network::active_socket_impl<P>::execute_next_send
         }
         else
         {
-            if (sendToken)
-                sendHandler_(id_, sendToken);
+            sendCompletionToken();
             if (auto sizeAfterDiscard = sendQueue_.discard(); sizeAfterDiscard == 0)
                 return; // no more data to send
         }
     }
     else
     {
-        auto & [packet, sendToken, _] = sendQueue_.front();
+        auto & [packet, sendCompletionToken, _] = sendQueue_.front();
         if (auto result = ::send(fileDescriptor_.get(), packet.data(), packet.size(), MSG_NOSIGNAL); result < 0)
         {
             if (result != EAGAIN)
@@ -307,15 +304,14 @@ void bcpp::network::active_socket_impl<P>::execute_next_send
             packet.discard(result);
             if (packet.empty())
             {
-                if (sendToken)
-                    sendHandler_(id_, sendToken);
+                sendCompletionToken();
                 if (auto sizeAfterDiscard = sendQueue_.discard(); sizeAfterDiscard == 0)
                     return; // no more data to send
             }
         }       
     }
 
-    sendWorkContract_.schedule();
+    sendContract_.schedule();
 }
 
 
@@ -402,23 +398,25 @@ void bcpp::network::active_socket_impl<P>::destroy
     // use a raw 'this' 
 )
 {
-    if (workContract_.is_valid())
+    if (receiveContract_.is_valid())
     {
-        workContract_.release();
+        receiveContract_.release();
     }    
     else
-    if (sendWorkContract_.is_valid())
     {
-        sendWorkContract_.release();
-    }
-    else
-    {
-        // remove this socket from the poller before deleting 
-        // 'this' as the poller has a raw pointer to 'this'.
-        disconnect();
-        if (auto poller = poller_.lock(); poller)
-            poller->unregister_socket(*this);
-        delete this;
+        if (sendContract_.is_valid())
+        {
+            sendContract_.release();
+        }
+        else
+        {
+            // remove this socket from the poller before deleting 
+            // 'this' as the poller has a raw pointer to 'this'.
+            disconnect();
+            if (auto poller = poller_.lock(); poller)
+                poller->unregister_socket(*this);
+            delete this;
+        }
     }
 }
 

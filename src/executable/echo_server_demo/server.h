@@ -31,10 +31,7 @@ struct echo_server : bcpp::non_movable, bcpp::non_copyable
     {
         session(bcpp::network::virtual_network_interface & networkInterface, bcpp::system::file_descriptor fileDescriptor):
             tcpSocket_(networkInterface.accept_tcp_socket(std::move(fileDescriptor), {}, 
-                    {.receiveHandler_ = [this](auto, auto packet, auto)
-                    {
-                        tcpSocket_.send(std::move(packet));
-                    }})){}
+                    {.receiveHandler_ = [this](auto, auto packet, auto){tcpSocket_.send(std::move(packet));}})){}
         bcpp::network::tcp_socket tcpSocket_;
     };
 

@@ -6,25 +6,6 @@
 #include <atomic>
 
 
-std::mutex mutex;
-std::condition_variable conditionVariable;
-std::atomic<bool> acceptedConnect{false};
-
-
-//=============================================================================
-void accept_connection
-(
-    bcpp::network::socket_id socketId, 
-    bcpp::system::file_descriptor fileDescriptor
-)
-{
-    std::cout << "\taccepted connection\n";
-    std::unique_lock uniqueLock(mutex);
-    acceptedConnect = true;
-    conditionVariable.notify_all();
-}
-
-
 //=============================================================================
 int main
 (
@@ -35,6 +16,10 @@ int main
     using namespace std::chrono;
     using namespace bcpp::network::literals;
 
+    std::mutex mutex;
+    std::condition_variable conditionVariable;
+    std::atomic<bool> sendCompletion{false};
+
     std::cout << "create virtual network interface\n";
     bcpp::network::virtual_network_interface virtualNetworkInterface({.physicalNetworkInterfaceName_ = "lo"});
     if (!virtualNetworkInterface.is_valid())
@@ -44,7 +29,7 @@ int main
     }
     std::cout << "\tcreate tcp listener socket\n";
 
-    auto tcpListenerSocket = virtualNetworkInterface.create_tcp_socket({.portId_ = 3000_port}, {.acceptHandler_ = accept_connection});
+    auto tcpListenerSocket = virtualNetworkInterface.create_tcp_socket({.portId_ = 3000_port}, {});
     if (!tcpListenerSocket.is_valid())
     {
         std::cerr << "Failed to create tcp listener socket\n";
@@ -59,7 +44,7 @@ int main
                     virtualNetworkInterface.poll();
                     virtualNetworkInterface.service_sockets();
                 }
-        });
+            });
 
     auto tcpSocket = virtualNetworkInterface.create_tcp_socket(tcpListenerSocket.get_socket_address(), {}, {});
     if (!tcpSocket.is_valid())
@@ -68,10 +53,20 @@ int main
         return -1;
     }
 
+    bcpp::network::send_completion_token sendCompletionToken{
+            [&](auto)
+            { 
+                std::lock_guard lockGuard(mutex);
+                std::cout << "\tReceived send completion\n";
+                sendCompletion = true;
+                conditionVariable.notify_all();
+            }};
+    tcpSocket.send(""_packet, sendCompletionToken);
+
     std::unique_lock uniqueLock(mutex);
-    if (!conditionVariable.wait_for(uniqueLock, 1s, [&](){return acceptedConnect.load();}))
+    if (!conditionVariable.wait_for(uniqueLock, 1s, [&](){return sendCompletion.load();}))
     {
-        std::cerr << "Failed to accept connection\n";
+        std::cerr << "Failed to receive send completion callback\n";
         return -1;
     }
     std::cout << "success\n";

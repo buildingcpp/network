@@ -92,7 +92,14 @@ namespace bcpp::network
 
     };
 
+
+    namespace literals
+    {
+        static packet operator""_packet(char const * addr, std::size_t len){return packet({addr, len});}
+    }
+
 } // namespace bcpp::network
+
 
 
 //=============================================================================

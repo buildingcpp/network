@@ -2,7 +2,6 @@
 
 #include "./socket.h"
 #include "./traits/traits.h"
-#include "./return_code/connect_result.h"
 #include <include/file_descriptor.h>
 #include <library/network/poller/poller.h>
 #include <library/network/ip/socket_address.h>

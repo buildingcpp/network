@@ -171,12 +171,7 @@ void bcpp::network::virtual_network_interface::stop
 {
     // stop the work contract group.  this will release each of the work contracts 
     // that are associated with the sockets that were created by this network interface.
-    bool wasRunning = false;
-    {
-        std::lock_guard lockGuard(mutex_);
-        wasRunning = (stopped_.exchange(true) == false);
-    }
-    if (wasRunning)
+    if (auto wasRunning = (stopped_.exchange(true) == false); wasRunning)
     {
         ipAddress_ = {};
         receiveWorkContractGroup_->stop();

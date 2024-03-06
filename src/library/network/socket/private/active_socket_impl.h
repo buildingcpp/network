@@ -31,13 +31,11 @@ namespace bcpp::network
         struct event_handlers : socket_base_impl::event_handlers
         {
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
-            using send_handler = std::function<void(socket_id, send_token)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
             using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
             using hang_up_handler = std::function<void(socket_id)>;
             using peer_hang_up_handler = std::function<void(socket_id)>;
 
-            send_handler                sendHandler_;
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
@@ -47,7 +45,7 @@ namespace bcpp::network
 
         struct configuration
         {
-            static auto constexpr default_send_queue_capacity = ((1 << 10) * 8);
+            static auto constexpr default_send_queue_capacity = ((1 << 20));//((1 << 10) * 8);
 
             std::size_t     socketReceiveBufferSize_{0};
             std::size_t     socketSendBufferSize_{0};
@@ -90,7 +88,7 @@ namespace bcpp::network
         bool send
         (
             packet &&,
-            send_token
+            send_completion_token
         );
 
         bool send_to
@@ -103,7 +101,7 @@ namespace bcpp::network
         (
             socket_address,
             packet &&,
-            send_token
+            send_completion_token
         ) requires (udp_concept<P>);
 
         connect_result connect_to
@@ -146,8 +144,6 @@ namespace bcpp::network
 
         std::weak_ptr<poller>                               poller_;
 
-        typename event_handlers::send_handler               sendHandler_;
-
         typename event_handlers::receive_handler            receiveHandler_;
 
         typename event_handlers::receive_error_handler      receiveErrorHandler_;
@@ -161,19 +157,19 @@ namespace bcpp::network
         struct send_info 
         {
             send_info() = default;
-            send_info(packet p, send_token sendToken, socket_address destination):
-                packet_(std::move(p)), sendToken_(sendToken), destination_(destination){}
+            send_info(packet p, send_completion_token sendCompletionToken, socket_address destination):
+                packet_(std::move(p)), sendToken_(sendCompletionToken), destination_(destination){}
             send_info(send_info &&) = default;
             send_info & operator = (send_info &&) = default;
 
             packet          packet_;
-            send_token      sendToken_;
+            send_completion_token      sendToken_;
             socket_address  destination_;
         };
 
         spsc_fixed_queue<send_info>                         sendQueue_;
 
-        system::blocking_work_contract                      sendWorkContract_;
+        system::blocking_work_contract                      sendContract_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

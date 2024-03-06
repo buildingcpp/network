@@ -1,9 +1,9 @@
 #pragma once
 
 #include "./socket.h"
-#include "./send_token.h"
+#include "./send_completion_token.h"
 #include "./traits/traits.h"
-#include "./return_code/connect_result.h"
+#include "./connect_result.h"
 
 #include <library/system.h>
 #include <library/network/poller/poller.h>
@@ -38,14 +38,12 @@ namespace bcpp::network
             using poll_error_handler = std::function<void(socket_id)>;
             using hang_up_handler = std::function<void(socket_id)>;
             using peer_hang_up_handler = std::function<void(socket_id)>;
-            using send_handler = std::function<void(socket_id, send_token)>;
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
             close_handler               closeHandler_;
             poll_error_handler          pollErrorHandler_;
-            send_handler                sendHandler_;
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
@@ -109,7 +107,7 @@ namespace bcpp::network
         bool send
         (
             packet &&,
-            send_token
+            send_completion_token
         );
 
         bool send_to
@@ -122,7 +120,7 @@ namespace bcpp::network
         (
             socket_address,
             packet &&,
-            send_token
+            send_completion_token
         ) requires (udp_concept<P>);
 
         connect_result connect_to

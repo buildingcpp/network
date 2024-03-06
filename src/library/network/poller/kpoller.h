@@ -9,7 +9,6 @@
 #include <include/file_descriptor.h>
 #include <library/network/socket/socket.h>
 
-#include <mutex>
 #include <vector>
 #include <memory>
 #include <chrono>

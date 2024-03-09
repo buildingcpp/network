@@ -71,8 +71,9 @@ int main
                                             };
                                     auto received = std::atoi(packet.data());
                                     if (expected != received)
-                                        print(fmt::format("*** Expected {} but got {}", expected, received));
-                                    print(fmt::format("receiver #{} got multicast packet - data = {}", 
+                                        print(fmt::format("UDP loss *** Expected {} but got {}", expected, received));
+                                    else
+                                        print(fmt::format("receiver #{} got multicast packet - data = {}", 
                                             id, std::string_view(packet.data(), packet.size())));
                                     expected = received + 1;
                                 },
@@ -86,11 +87,12 @@ int main
         // set up multicast sender socket and then send messages
         auto sender = networkInterface.create_udp_socket({}, {});
         sender.connect_to(multicastChannel);
-        for (auto i = 0; i < 8192; ++i)
+        for (auto i = 0; i < 1000000; ++i)
         {
             bcpp::network::packet p(fmt::format("{}\0", i));
-            sender.send(std::move(p));
-            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            while (!sender.send(std::move(p)))
+                ;
+          //  std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         // demo is async so give it a moment to complete

@@ -2,7 +2,7 @@
 #include "./client.h"
 
 #include <chrono>
-#include <fmt/format.h>
+#include <format>
 
 
 //=============================================================================
@@ -20,7 +20,7 @@ int main
     echo_client echoClient(bcpp::network::network_interface_configuration{.ipAddress_ = bcpp::network::in_addr_any}, {echoServer.get_ip_address(), 3000_port});
 
     for (auto i = 0; i < 100; ++i)
-        while (!echoClient.send(fmt::format("message {}\n", i)));
+        while (!echoClient.send(std::format("message {}\n", i)));
 
     std::this_thread::sleep_for(1s); // demo is async so give it a moment to complete
     return 0;

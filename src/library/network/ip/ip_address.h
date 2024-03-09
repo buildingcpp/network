@@ -2,7 +2,7 @@
 
 #include <include/endian.h>
 
-#include <fmt/format.h>
+#include <format>
 
 #include <cstdint>
 #include <string>
@@ -81,7 +81,7 @@ namespace bcpp::network
     {
         ::in_addr value = ipAddress;
         auto p = reinterpret_cast<std::uint8_t const *>(&value.s_addr);
-        return fmt::format("{}.{}.{}.{}", p[0], p[1], p[2], p[3]);       
+        return std::format("{}.{}.{}.{}", p[0], p[1], p[2], p[3]);       
     }
 
 } // namespace bcpp::network

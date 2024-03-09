@@ -3,7 +3,7 @@
 #include "./ip_address.h"
 #include "./port_id.h"
 
-#include <fmt/format.h>
+#include <format>
 
 #include <algorithm>
 #include <string>
@@ -80,7 +80,7 @@ namespace bcpp::network
         socket_address socketAddress
     )
     {
-        return fmt::format("{}:{}", to_string(socketAddress.get_ip_address()), to_string(socketAddress.get_port_id()));     
+        return std::format("{}:{}", to_string(socketAddress.get_ip_address()), to_string(socketAddress.get_port_id()));     
     }
 
 } // namespace bcpp::network

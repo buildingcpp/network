@@ -1,5 +1,7 @@
 #include "./active_socket_impl.h"
 
+#include <cstring>
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>

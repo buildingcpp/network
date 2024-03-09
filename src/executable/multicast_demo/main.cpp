@@ -71,9 +71,9 @@ int main
                                             };
                                     auto received = std::atoi(packet.data());
                                     if (expected != received)
-                                        print(fmt::format("UDP loss *** Expected {} but got {}", expected, received));
+                                        print(std::format("UDP loss *** Expected {} but got {}", expected, received));
                                     else
-                                        print(fmt::format("receiver #{} got multicast packet - data = {}", 
+                                        print(std::format("receiver #{} got multicast packet - data = {}", 
                                             id, std::string_view(packet.data(), packet.size())));
                                     expected = received + 1;
                                 },
@@ -89,7 +89,7 @@ int main
         sender.connect_to(multicastChannel);
         for (auto i = 0; i < 1000000; ++i)
         {
-            bcpp::network::packet p(fmt::format("{}\0", i));
+            bcpp::network::packet p(std::format("{}\0", i));
             while (!sender.send(std::move(p)))
                 ;
           //  std::this_thread::sleep_for(std::chrono::microseconds(10));

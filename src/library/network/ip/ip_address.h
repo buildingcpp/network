@@ -2,18 +2,16 @@
 
 #include <include/endian.h>
 
-#include <format>
-
 #include <cstdint>
 #include <string>
 #include <span>
 #include <string_view>
+#include <iostream>
 
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include <iostream>
 
 
 namespace bcpp::network
@@ -81,7 +79,8 @@ namespace bcpp::network
     {
         ::in_addr value = ipAddress;
         auto p = reinterpret_cast<std::uint8_t const *>(&value.s_addr);
-        return std::format("{}.{}.{}.{}", p[0], p[1], p[2], p[3]);       
+        return std::to_string(p[0]) + '.' + std::to_string(p[1]) + '.' +
+                std::to_string(p[2]) + '.' + std::to_string(p[3]);      
     }
 
 } // namespace bcpp::network

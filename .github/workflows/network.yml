@@ -18,10 +18,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        compiler: [ g++-12 ]
+        compiler: [ g++-13 ]
         include:
           - os: ubuntu-latest
-            compiler: g++-12
+            compiler: g++-13
             target: Linux
 
     steps:
@@ -30,11 +30,11 @@ jobs:
 
       - name: build
         env:
-          CC: gcc-12
-          CXX: g++-12
+          CC: gcc-13
+          CXX: g++-13
         run: |
           sudo apt update
-          sudo apt install gcc-12 g++-12
+          sudo apt install gcc-13 g++-13
           mkdir build
           cd build
           cmake ..

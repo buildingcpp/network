@@ -224,4 +224,89 @@ for (auto & worker : workers)
        }));
 ```
 
+#Socket creation: `configuration` and `event_handlers`
+Socket configuration is acheived by providing `socket::configuration` and `socket::event_handlers` when creating the socket via one of the `virtual_network_interface::create_***_socket()` functions listed above.
 
+`event_handlers` (callbacks) are not only a design choice but are necessary because the library is asynchronous.  Therefore, receiving packets as well as receiving send completion notifications must be done via `event_handlers`.
+
+**Creating and configuring a TCP listener socket and creating accepted sockets:**
+
+```
+struct bcpp::network::tcp_listener_socket::configuration
+{
+    port_id         portId_;                       // the port id for this socket
+    std::uint32_t   backlog_{default_backlog};     // accept backlog capacity
+};
+```
+
+```
+struct bcpp::network::tcp_listener_socket::event_handlers
+{
+    using close_handler = std::function<void(socket_id)>;                           // optional socket close callback
+    using poll_error_handler = std::function<void(socket_id)>;                      // optional error callback
+    using accept_handler = std::function<void(socket_id, system::file_descriptor)>; // required accept callback
+
+    close_handler           closeHandler_;
+    poll_error_handler      pollErrorHandler_;
+    accept_handler          acceptHandler_;
+};
+```
+
+```
+void on_accept
+(
+    auto socketId,
+    auto fileDescriptor
+)
+{
+    bcpp::network::tcp_socket::configuration acceptedSocketConfiguration;   // configured as needed 
+    bcpp::network::tcp_socket::event_handlers acceptedSocketEventHandlers;  // configured as needed
+    auto acceptedTcpSocket = virtualNetworkInterface.create_tcp_socket(std::move(fileDescriptor),
+            acceptedSocketConfiguration, acceptedSocketEventHandlers);
+}
+
+
+auto tcpListenerSocket = virtualNetworkInterface.create_tcp_socket(
+        {
+            bcpp::network::tcp_listener_socket::configration{.portId_ = 10000_port},            // configuration
+            bcpp::network::tcp_listener_socket::event_handlers{.acceptHandler_ = on_accept}     // event handlers
+        });
+```
+
+
+**Creating and configuring a TCP sockets and connecting to listener sockets:**
+
+```
+struct bcpp::network::tcp_socket::configuration
+{
+    std::size_t socketReceiveBufferSize_{0};                // socket recv buffer size (0 = default)
+    std::size_t socketSendBufferSize_{0};                   // socket send buffer size (0 = default)
+    std::size_t readBufferSize_{0};                         // max bytes to receive per recv call (receive packet's capacity)
+    std::size_t sendQueueSize_{0};                          // capacity of async send packet queue
+    system::io_mode ioMode_{system::io_mode::read_write};   // socket read/write mode
+};
+```
+
+```
+struct bcpp::network::tcp_socket::event_handlers
+{
+    using close_handler = std::function<void(socket_id)>;                               
+    using poll_error_handler = std::function<void(socket_id)>;                          
+    using hang_up_handler = std::function<void(socket_id)>;                             
+    using peer_hang_up_handler = std::function<void(socket_id)>;                        
+    using receive_handler = std::function<void(socket_id, packet, socket_address)>;     
+    using receive_error_handler = std::function<void(socket_id, std::int32_t)>;         
+    using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;    
+
+    close_handler               closeHandler_;              // optional close callback
+    poll_error_handler          pollErrorHandler_;          // optional poll error callback
+    receive_handler             receiveHandler_;            // optional hangup callback
+    receive_error_handler       receiveErrorHandler_;       // optional peer hangup callback
+    packet_allocation_handler   packetAllocationHandler_;   // requried packet receive callback
+    hang_up_handler             hangUpHandler_;             // optional receive error callback
+    peer_hang_up_handler        peerHangUpHandler_;         // optional packet allocator callback
+};
+```
+
+
+#[WIP]

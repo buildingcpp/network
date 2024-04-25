@@ -16,4 +16,9 @@ namespace bcpp::network
 
     std::vector<network_interface_configuration> get_available_network_interfaces();
 
+    network_interface_configuration get_network_interface_configuration
+    (
+        network_interface_name
+    );
+
 }

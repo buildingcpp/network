@@ -60,17 +60,11 @@ namespace example_3
         bcpp::network::network_interface_name physicalNetworkInterfaceName
     )
     {
-        for (auto const & networkInterfaceConfiguration : bcpp::network::get_available_network_interfaces())
+        bcpp::network::virtual_network_interface virtualNetworkInterface({.networkInterfaceConfiguration_ = get_network_interface_configuration(physicalNetworkInterfaceName)});
+        if (virtualNetworkInterface.is_valid())
         {
-            if (networkInterfaceConfiguration.name_ == physicalNetworkInterfaceName)
-            {
-                bcpp::network::virtual_network_interface virtualNetworkInterface({.networkInterfaceConfiguration_ = networkInterfaceConfiguration});
-                if (virtualNetworkInterface.is_valid())
-                {
-                    std::cout << "Successfully created virtual network interface from physical network interface \"" << physicalNetworkInterfaceName << "\"\n";
-                    return;
-                }
-            }
+            std::cout << "Successfully created virtual network interface from physical network interface \"" << virtualNetworkInterface.get_name() << "\"\n";
+            return;
         }
         std::cout << "Failed to create virtual network interface from physical network interface \"" << physicalNetworkInterfaceName << "\"\n";
     }

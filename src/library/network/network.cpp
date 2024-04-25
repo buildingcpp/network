@@ -61,3 +61,18 @@ auto bcpp::network::get_available_network_interfaces
 
     return interfaces;
 }
+
+
+//=============================================================================
+auto bcpp::network::get_network_interface_configuration
+(
+    // locate the configuration for the physical network interface associated with
+    // the specified network interface name.
+    network_interface_name physicalNetworkInterfaceName
+) -> network_interface_configuration
+{
+    for (auto const & networkInterfaceConfiguration : get_available_network_interfaces())
+        if (networkInterfaceConfiguration.name_ == physicalNetworkInterfaceName)
+            return networkInterfaceConfiguration;
+    return {};
+}

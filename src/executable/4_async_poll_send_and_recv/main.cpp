@@ -87,8 +87,6 @@ namespace example_1
 } // namespace example_1
 
 
-
-
 //============================================================================
 namespace example_2
 {

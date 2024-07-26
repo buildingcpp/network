@@ -43,7 +43,7 @@ if ("${_scripts_src_path}" STREQUAL "")
 
     FetchContent_Declare(
         scripts
-        GIT_REPOSITORY git@github.com:buildingcpp/scripts.git
+        GIT_REPOSITORY https://github.com/buildingcpp/scripts.git
         GIT_TAG main
         SOURCE_DIR        "${CMAKE_BINARY_DIR}/scripts-src"
         BINARY_DIR        "${CMAKE_BINARY_DIR}/scripts-build"

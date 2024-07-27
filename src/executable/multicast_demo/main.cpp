@@ -60,7 +60,11 @@ int main
             receiver = networkInterface.multicast_join(multicastChannel, {}, 
                     {
                         .receiveHandler_ = [id = receiverId++, expected = 0]  
-                        (auto, auto packet, auto)mutable
+                                (
+                                    auto, 
+                                    auto packet, 
+                                    auto
+                                )mutable
                                 {
                                     // special print function with locking just so that demo output doesn't get all mashed up
                                     auto print = [](std::string_view const input)
@@ -97,6 +101,9 @@ int main
 
         // demo is async so give it a moment to complete
         std::this_thread::sleep_for(1s); 
+        
+        threadPool.stop();
+        networkInterface.stop();
     }
     else
     {

@@ -9,8 +9,8 @@ bcpp::network::active_socket<P>::socket
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & sendWorkContractGroup,
-    system::blocking_work_contract_group & receiveWorkContractGroup,
+    work_contract_tree_type & sendWorkContractGroup,
+    work_contract_tree_type & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
 ) requires (udp_concept<P>) 
 try
@@ -49,8 +49,8 @@ bcpp::network::active_socket<P>::socket
     ip_address ipAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & sendWorkContractGroup,
-    system::blocking_work_contract_group & receiveWorkContractGroup,
+    work_contract_tree_type & sendWorkContractGroup,
+    work_contract_tree_type & receiveWorkContractGroup,
     std::shared_ptr<poller> & p
 ) requires (tcp_concept<P>)
 try 
@@ -89,8 +89,8 @@ bcpp::network::active_socket<P>::socket
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & sendWorkContractGroup,
-    system::blocking_work_contract_group & recevieWorkContractGroup,
+    work_contract_tree_type & sendWorkContractGroup,
+    work_contract_tree_type & recevieWorkContractGroup,
     std::shared_ptr<poller> & p
 ) requires (tcp_concept<P>)
 try 

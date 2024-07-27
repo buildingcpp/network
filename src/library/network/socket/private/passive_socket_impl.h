@@ -31,9 +31,9 @@ namespace bcpp::network
 
         struct configuration
         {
-            system::synchronization_mode    synchronicityMode_{system::synchronization_mode::non_blocking};
-            std::uint32_t                   backlog_{1024};
-            system::io_mode                 ioMode_{system::io_mode::read_write};
+            synchronization_mode    synchronicityMode_{synchronization_mode::non_blocking};
+            std::uint32_t           backlog_{1024};
+            system::io_mode         ioMode_{system::io_mode::read_write};
         };
 
         socket_impl
@@ -41,7 +41,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> &
         );
 

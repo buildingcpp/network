@@ -26,6 +26,7 @@ namespace bcpp::network
     {
     public:
 
+
         using traits = socket_traits<P, socket_type::active>;
 
         struct event_handlers : socket_base_impl::event_handlers
@@ -63,8 +64,8 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> const &
         );
 
@@ -73,8 +74,8 @@ namespace bcpp::network
             system::file_descriptor,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> const &
         ) requires (tcp_concept<P>);
 
@@ -162,14 +163,16 @@ namespace bcpp::network
             send_info(send_info &&) = default;
             send_info & operator = (send_info &&) = default;
 
-            packet          packet_;
-            send_completion_token      sendToken_;
-            socket_address  destination_;
+            packet                      packet_;
+            send_completion_token       sendToken_;
+            socket_address              destination_;
         };
 
         spsc_fixed_queue<send_info>                         sendQueue_;
 
-        system::blocking_work_contract                      sendContract_;
+        work_contract_type                                  sendContract_;
+
+        packet                                              pendingReceivePacket_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

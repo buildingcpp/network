@@ -24,8 +24,8 @@ bcpp::network::active_socket_impl<P>::socket_impl
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & sendWorkContractGroup,
-    system::blocking_work_contract_group & receiveWorkContractGroup,
+    work_contract_tree_type & sendWorkContractGroup,
+    work_contract_tree_type & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
 ) :
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
@@ -68,8 +68,8 @@ bcpp::network::active_socket_impl<P>::socket_impl
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & sendWorkContractGroup,
-    system::blocking_work_contract_group & receiveWorkContractGroup,
+    work_contract_tree_type & sendWorkContractGroup,
+    work_contract_tree_type & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
 ) requires (tcp_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
@@ -336,11 +336,12 @@ void bcpp::network::active_socket_impl<P>::receive
 (
 ) requires (tcp_concept<P>)
 {
-    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
-    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived > 0)
+    if (!pendingReceivePacket_)
+        pendingReceivePacket_ = std::move(packetAllocationHandler_(id_, readBufferSize_));
+    if (auto bytesReceived = ::recv(fileDescriptor_.get(), pendingReceivePacket_.data(), pendingReceivePacket_.capacity(), 0); bytesReceived > 0)
     {
-        buffer.resize(bytesReceived);
-        receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
+        pendingReceivePacket_.resize(bytesReceived);
+        receiveHandler_(id_, std::move(pendingReceivePacket_), peerSocketAddress_);
         if (get_bytes_available() > 0)
             on_polled(); // there is more data so reschedule the work contract
         return;
@@ -371,13 +372,13 @@ void bcpp::network::active_socket_impl<P>::receive
     {
         ::sockaddr_in sockAddrIn;
         ::socklen_t addressLength = sizeof(sockAddrIn);
-
-        packet buffer = packetAllocationHandler_(id_, readBufferSize_);
-        if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0, 
+        if (!pendingReceivePacket_)
+            pendingReceivePacket_ = std::move(packetAllocationHandler_(id_, readBufferSize_));
+        if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), pendingReceivePacket_.data(), pendingReceivePacket_.capacity(), 0, 
                 reinterpret_cast<::sockaddr *>(&sockAddrIn), &addressLength); bytesReceived >= 0)
         {
-            buffer.resize(bytesReceived);
-            receiveHandler_(id_, std::move(buffer), sockAddrIn);
+            pendingReceivePacket_.resize(bytesReceived);
+            receiveHandler_(id_, std::move(pendingReceivePacket_), sockAddrIn);
             on_polled(); // there could be more ...
         }
         else

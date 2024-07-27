@@ -78,6 +78,8 @@ namespace bcpp::network
 
         operator std::span<element_type const>() const;
 
+        operator bool() const;
+
     private:
 
         void release();
@@ -95,6 +97,7 @@ namespace bcpp::network
 
     namespace literals
     {
+        [[maybe_unused]]
         static packet operator""_packet(char const * addr, std::size_t len){return packet({addr, len});}
     }
 
@@ -283,6 +286,15 @@ inline void bcpp::network::packet::release
     size_ = {};
     buffer_ = {};
     begin_ = {};
+}
+
+
+//=============================================================================
+inline bcpp::network::packet::operator bool
+(
+) const
+{
+    return (buffer_.size() > 0);
 }
 
 

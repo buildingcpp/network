@@ -21,7 +21,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
-    system::blocking_work_contract workContract
+    work_contract_type workContract
 ) try :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
@@ -35,7 +35,7 @@ bcpp::network::socket_base_impl::socket_base_impl
         bind(socketAddress);
         socketAddress_ = get_socket_name();
     }
-    if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
+    if (auto success = set_synchronicity(synchronization_mode::non_blocking); !success)
         throw std::runtime_error("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
         throw std::runtime_error("set_io_mode failure");
@@ -56,7 +56,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     configuration const & config,
     event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
-    system::blocking_work_contract workContract
+    work_contract_type workContract
 ) try :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
@@ -65,7 +65,7 @@ bcpp::network::socket_base_impl::socket_base_impl
 {
     if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
         throw std::runtime_error("reuse address failure");
-    if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
+    if (auto success = set_synchronicity(synchronization_mode::non_blocking); !success)
         throw std::runtime_error("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
         throw std::runtime_error("set_io_mode failure");
@@ -203,13 +203,13 @@ auto bcpp::network::socket_base_impl::get_id
 //=============================================================================
 bool bcpp::network::socket_base_impl::set_synchronicity
 (
-    system::synchronization_mode mode
+    synchronization_mode mode
 ) noexcept
 {
     auto flags = ::fcntl(fileDescriptor_.get(), F_GETFL, 0);
     if (flags == -1)
         return false;
-    if (mode == system::synchronization_mode::blocking)
+    if (mode == synchronization_mode::blocking)
     {
         // synchronous/blocking mode
         flags &= ~O_NONBLOCK;

@@ -8,7 +8,7 @@ bcpp::network::passive_socket::socket
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    work_contract_tree_type & workContractGroup,
     std::shared_ptr<poller> & p
 ) 
 try

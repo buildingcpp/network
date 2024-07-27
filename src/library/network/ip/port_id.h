@@ -45,6 +45,7 @@ namespace bcpp::network
 
 
     //=========================================================================
+    [[maybe_unused]]
     static port_id byte_swap
     (
         port_id source
@@ -55,6 +56,7 @@ namespace bcpp::network
     
 
     //=========================================================================
+    [[maybe_unused]]
     static std::string to_string
     (
         port_id portId
@@ -66,6 +68,7 @@ namespace bcpp::network
 
     namespace literals
     {
+        [[maybe_unused]]
         static constexpr port_id operator""_port(unsigned long long int value){return port_id(value);}
     }
 
@@ -73,6 +76,7 @@ namespace bcpp::network
 
 
 //=============================================================================
+[[maybe_unused]]
 static std::ostream & operator << 
 (
     std::ostream & stream,

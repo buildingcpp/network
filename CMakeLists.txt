@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.3)
+cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,12 +14,16 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(
         -g
         -O0
+        -Wall
+        -fPIE
         -march=native
     )
 else()
     add_compile_options(
         -O3
         -march=native
+        -Wall
+        -fPIE
         -g
     )
 endif()
@@ -59,14 +63,20 @@ include("${_scripts_src_path}/cmake/fetch_dependencies.cmake")
 fetch_dependency("https://github.com/buildingcpp/include.git;main")
 fetch_dependency("https://github.com/buildingcpp/system.git;main")
 
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(WORK_CONTRACT_BUILD_BENCHMARK OFF)
+fetch_dependency("https://github.com/buildingcpp/work_contract.git;main")
+
 option(NETWORK_BUILD_DEMO "Build examples" ON)
 option(NETWORK_BUILD_TEST "Build tests" ON)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME})
-set(_${PROJECT_NAME}_dir ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
-
-add_subdirectory(src)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME})
+set(_${PROJECT_NAME}_dir ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
+
+
+add_subdirectory(src)
+

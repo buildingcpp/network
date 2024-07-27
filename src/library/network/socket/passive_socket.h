@@ -2,10 +2,13 @@
 
 #include "./socket.h"
 #include "./traits/traits.h"
+
 #include <include/file_descriptor.h>
+
 #include <library/network/poller/poller.h>
 #include <library/network/ip/socket_address.h>
 
+#include <library/work_contract.h>
 #include <library/system.h>
 
 #include <functional>
@@ -22,6 +25,9 @@ namespace bcpp::network
     {
     public:
 
+        using work_contract_tree_type = work_contract_tree<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_type = work_contract<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        
         using traits = tcp_listener_socket_traits; 
 
         static auto constexpr default_backlog{128};
@@ -55,7 +61,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> &
         );
 

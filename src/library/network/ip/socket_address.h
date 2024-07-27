@@ -134,6 +134,7 @@ constexpr bcpp::network::socket_address::socket_address
 
 
 //=============================================================================
+[[maybe_unused]]
 static std::ostream & operator << 
 (
     std::ostream & stream,

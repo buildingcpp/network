@@ -76,7 +76,7 @@ namespace example_2
         // a toy allocator
         static auto constexpr buffer_size = 2048;
         static auto constexpr allocator_capacity = 4;
-        using buffer = char[buffer_size];
+
         static std::vector<char> pool(allocator_capacity);
         static std::vector<std::int32_t> avail;
         for (auto i = 0; i < allocator_capacity; ++i)

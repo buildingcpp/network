@@ -118,6 +118,9 @@ namespace bcpp::network
 
     private:
 
+        using work_contract_tree_type = work_contract_tree<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_type = work_contract<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+
         template <socket_concept P, typename T>
         P open_socket
         (
@@ -128,8 +131,8 @@ namespace bcpp::network
 
         network_interface_configuration                         networkInterfaceConfiguration_;
         std::shared_ptr<poller>                                 poller_;
-        std::unique_ptr<system::blocking_work_contract_group>   sendWorkContractGroup_;
-        std::unique_ptr<system::blocking_work_contract_group>   receiveWorkContractGroup_;
+        std::unique_ptr<work_contract_tree_type>                sendWorkContractGroup_;
+        std::unique_ptr<work_contract_tree_type>                receiveWorkContractGroup_;
 
         std::atomic<bool>                                       stopped_{true};
         

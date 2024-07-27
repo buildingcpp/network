@@ -52,6 +52,7 @@ namespace bcpp::network
 
 
 //=============================================================================
+[[maybe_unused]]
 static std::ostream & operator << 
 (
     std::ostream & stream,

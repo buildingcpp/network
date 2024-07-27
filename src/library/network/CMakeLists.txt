@@ -21,6 +21,7 @@ target_link_libraries(network
 PUBLIC
     include
     system
+    work_contract
     )
 
 if (USE_KQUEUE)
@@ -32,6 +33,7 @@ target_include_directories(network
         ${_include_dir}/src
         ${_system_dir}/src
         ${_network_dir}/src
+        ${_work_contract_dir}/src
         ${_fmt_src_path}/include
         /usr/include/kqueue/
 )

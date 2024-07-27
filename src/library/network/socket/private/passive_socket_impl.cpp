@@ -7,7 +7,7 @@ bcpp::network::passive_socket_impl::socket_impl
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    system::blocking_work_contract_group & workContractGroup,
+    work_contract_tree_type & workContractGroup,
     std::shared_ptr<poller> & p
 ) :    
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),

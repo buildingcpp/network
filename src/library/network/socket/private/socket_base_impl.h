@@ -9,6 +9,7 @@
 #include <include/synchronization_mode.h>
 
 #include <library/system.h>
+#include <library/work_contract.h>
 
 #include <include/non_copyable.h>
 #include <include/non_movable.h>
@@ -25,6 +26,9 @@ namespace bcpp::network
         public non_movable
     {
     public:
+
+        using work_contract_tree_type = work_contract_tree<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_type = work_contract<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
 
         struct event_handlers
         {
@@ -45,7 +49,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            system::blocking_work_contract
+            work_contract_type
         );
 
         socket_base_impl
@@ -54,7 +58,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            system::blocking_work_contract
+            work_contract_type
         );
 
         virtual ~socket_base_impl();
@@ -105,7 +109,7 @@ namespace bcpp::network
 
         bool set_synchronicity
         (
-            system::synchronization_mode
+            synchronization_mode
         ) noexcept;
 
         bool shutdown
@@ -134,7 +138,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        system::blocking_work_contract      receiveContract_;
+        work_contract_type                  receiveContract_;
 
     }; // class socket_base_impl
 

@@ -72,6 +72,7 @@ namespace bcpp::network
 
 
     //=========================================================================
+    [[maybe_unused]]
     static std::string to_string
     (
         ip_address ipAddress
@@ -89,6 +90,7 @@ namespace bcpp::network
 
 
 //=============================================================================
+[[maybe_unused]]
 static std::ostream & operator << 
 (
     std::ostream & stream,

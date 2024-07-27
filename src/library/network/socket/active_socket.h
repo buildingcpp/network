@@ -6,6 +6,7 @@
 #include "./connect_result.h"
 
 #include <library/system.h>
+#include <library/work_contract.h>
 #include <library/network/poller/poller.h>
 #include <library/network/ip/socket_address.h>
 #include <library/network/packet/packet.h>
@@ -29,6 +30,9 @@ namespace bcpp::network
     class socket<active_socket_traits<P>>
     {
     public:
+
+        using work_contract_tree_type = work_contract_tree<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_type = work_contract<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
 
         using traits = active_socket_traits<P>; 
 
@@ -72,8 +76,8 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> &
         ) requires (udp_concept<P>);
 
@@ -82,8 +86,8 @@ namespace bcpp::network
             ip_address,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> &
         ) requires (tcp_concept<P>);
 
@@ -92,8 +96,8 @@ namespace bcpp::network
             system::file_descriptor,
             configuration const &,
             event_handlers const &,
-            system::blocking_work_contract_group &,
-            system::blocking_work_contract_group &,
+            work_contract_tree_type &,
+            work_contract_tree_type &,
             std::shared_ptr<poller> &
         ) requires (tcp_concept<P>);
 

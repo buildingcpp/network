@@ -31,8 +31,8 @@ namespace bcpp::network
     {
     public:
 
-        using work_contract_tree_type = work_contract_tree<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
-        using work_contract_type = work_contract<synchronization_mode::async>; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_tree_type = work_contract_tree; // really we want blocking here but that implementation needs to be restored 
+        using work_contract_type = work_contract; // really we want blocking here but that implementation needs to be restored 
 
         using traits = active_socket_traits<P>; 
 

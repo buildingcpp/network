@@ -57,6 +57,7 @@ int main
         std::array<bcpp::network::udp_socket, number_of_receivers> receivers;
         auto receiverId = 0;
         for (auto & receiver : receivers)
+        {
             receiver = networkInterface.multicast_join(multicastChannel, {}, 
                     {
                         .receiveHandler_ = [id = receiverId++, expected = 0]  
@@ -64,7 +65,7 @@ int main
                                     auto, 
                                     auto packet, 
                                     auto
-                                )mutable
+                                ) mutable
                                 {
                                     // special print function with locking just so that demo output doesn't get all mashed up
                                     auto print = [](std::string_view const input)
@@ -77,16 +78,20 @@ int main
                                     if (expected != received)
                                         print(std::format("UDP loss *** Expected {} but got {}", expected, received));
                                     else
-                                        print(std::format("receiver #{} got multicast packet - data = {}", 
-                                            id, std::string_view(packet.data(), packet.size())));
+                                        print(std::format("receiver #{} got multicast packet - data = {}", id, std::string_view(packet.data(), packet.size())));
                                     expected = received + 1;
                                 },
-                        .packetAllocationHandler_ = [](bcpp::network::socket_id, std::size_t capacity)
+                        .packetAllocationHandler_ = []
+                                (
+                                    bcpp::network::socket_id, 
+                                    std::size_t capacity
+                                )
                                 {
                                     // new/delete here are overkill but demonstrate where an allocator would fit in
                                     return bcpp::network::packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, std::span(new char[capacity], capacity));
                                 }
                     });
+        }
 
         // set up multicast sender socket and then send messages
         auto sender = networkInterface.create_udp_socket({}, {});
@@ -101,7 +106,7 @@ int main
 
         // demo is async so give it a moment to complete
         std::this_thread::sleep_for(1s); 
-        
+
         threadPool.stop();
         networkInterface.stop();
     }

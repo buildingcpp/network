@@ -27,9 +27,6 @@ namespace bcpp::network
     {
     public:
 
-        using work_contract_tree_type = work_contract_tree; // really we want blocking here but that implementation needs to be restored 
-        using work_contract_type = work_contract; // really we want blocking here but that implementation needs to be restored 
-
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
@@ -49,7 +46,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            work_contract_type
+            work_contract
         );
 
         socket_base_impl
@@ -58,7 +55,7 @@ namespace bcpp::network
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
-            work_contract_type
+            work_contract
         );
 
         virtual ~socket_base_impl();
@@ -138,7 +135,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        work_contract_type                  receiveContract_;
+        work_contract                  receiveContract_;
 
     }; // class socket_base_impl
 

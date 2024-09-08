@@ -64,8 +64,8 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
-            work_contract_tree_type &,
+            work_contract_group &,
+            work_contract_group &,
             std::shared_ptr<poller> const &
         );
 
@@ -74,8 +74,8 @@ namespace bcpp::network
             system::file_descriptor,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
-            work_contract_tree_type &,
+            work_contract_group &,
+            work_contract_group &,
             std::shared_ptr<poller> const &
         ) requires (tcp_concept<P>);
 
@@ -170,7 +170,7 @@ namespace bcpp::network
 
         spsc_fixed_queue<send_info>                         sendQueue_;
 
-        work_contract_type                                  sendContract_;
+        work_contract                                  sendContract_;
 
         packet                                              pendingReceivePacket_;
 

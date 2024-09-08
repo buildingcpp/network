@@ -24,9 +24,6 @@ namespace bcpp::network
     class socket<tcp_listener_socket_traits>
     {
     public:
-
-        using work_contract_tree_type = work_contract_tree; // really we want blocking here but that implementation needs to be restored 
-        using work_contract_type = work_contract; // really we want blocking here but that implementation needs to be restored 
         
         using traits = tcp_listener_socket_traits; 
 
@@ -61,7 +58,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
+            work_contract_group &,
             std::shared_ptr<poller> &
         );
 

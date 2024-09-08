@@ -13,8 +13,8 @@ bcpp::network::virtual_network_interface::virtual_network_interface
 {
     networkInterfaceConfiguration_.ipAddress_ = in_addr_any;
     poller_ = poller_->create({});
-    sendWorkContractGroup_ = std::make_unique<work_contract_tree_type>(default_capacity);
-    receiveWorkContractGroup_ = std::make_unique<work_contract_tree_type>(default_capacity);
+    sendWorkContractGroup_ = std::make_unique<work_contract_group>(default_capacity);
+    receiveWorkContractGroup_ = std::make_unique<work_contract_group>(default_capacity);
     stopped_ = false;
 }
 
@@ -29,8 +29,8 @@ bcpp::network::virtual_network_interface::virtual_network_interface
     if (networkInterfaceConfiguration_.ipAddress_.is_valid())
     {
         poller_ = poller_->create(config.poller_);
-        sendWorkContractGroup_ = std::make_unique<work_contract_tree_type>(config.capacity_);
-        receiveWorkContractGroup_ = std::make_unique<work_contract_tree_type>(config.capacity_);
+        sendWorkContractGroup_ = std::make_unique<work_contract_group>(config.capacity_);
+        receiveWorkContractGroup_ = std::make_unique<work_contract_group>(config.capacity_);
         stopped_ = false;
     }
 }

@@ -41,7 +41,7 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
+            work_contract_group &,
             std::shared_ptr<poller> &
         );
 

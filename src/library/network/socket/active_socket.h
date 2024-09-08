@@ -31,9 +31,6 @@ namespace bcpp::network
     {
     public:
 
-        using work_contract_tree_type = work_contract_tree; // really we want blocking here but that implementation needs to be restored 
-        using work_contract_type = work_contract; // really we want blocking here but that implementation needs to be restored 
-
         using traits = active_socket_traits<P>; 
 
         struct event_handlers
@@ -76,8 +73,8 @@ namespace bcpp::network
             socket_address,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
-            work_contract_tree_type &,
+            work_contract_group &,
+            work_contract_group &,
             std::shared_ptr<poller> &
         ) requires (udp_concept<P>);
 
@@ -86,8 +83,8 @@ namespace bcpp::network
             ip_address,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
-            work_contract_tree_type &,
+            work_contract_group &,
+            work_contract_group &,
             std::shared_ptr<poller> &
         ) requires (tcp_concept<P>);
 
@@ -96,8 +93,8 @@ namespace bcpp::network
             system::file_descriptor,
             configuration const &,
             event_handlers const &,
-            work_contract_tree_type &,
-            work_contract_tree_type &,
+            work_contract_group &,
+            work_contract_group &,
             std::shared_ptr<poller> &
         ) requires (tcp_concept<P>);
 

@@ -24,8 +24,8 @@ bcpp::network::active_socket_impl<P>::socket_impl
     socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    work_contract_tree_type & sendWorkContractGroup,
-    work_contract_tree_type & receiveWorkContractGroup,
+    work_contract_group & sendWorkContractGroup,
+    work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
 ) :
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
@@ -68,8 +68,8 @@ bcpp::network::active_socket_impl<P>::socket_impl
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
-    work_contract_tree_type & sendWorkContractGroup,
-    work_contract_tree_type & receiveWorkContractGroup,
+    work_contract_group & sendWorkContractGroup,
+    work_contract_group & receiveWorkContractGroup,
     std::shared_ptr<poller> const & p
 ) requires (tcp_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),

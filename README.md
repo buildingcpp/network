@@ -1,5 +1,3 @@
-<img src="https://github.com/buildingcpp/network/actions/workflows/network.yml/badge.svg?branch=main">
-
 
 # network - a simple, easy to use async network library using work contracts
 lots of logging, documentation and error handling to be added

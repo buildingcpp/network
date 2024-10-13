@@ -27,6 +27,11 @@ namespace bcpp::network
 
         packet
         ( 
+            std::size_t
+        );
+
+        packet
+        ( 
             std::span<element_type const>
         );
 
@@ -58,9 +63,9 @@ namespace bcpp::network
 
         auto end() const;
 
-        auto data() const;
+        element_type const * data() const;
 
-        auto data();
+        element_type * data();
 
         auto size() const;
 
@@ -103,6 +108,18 @@ namespace bcpp::network
 
 } // namespace bcpp::network
 
+
+//=============================================================================
+inline bcpp::network::packet::packet
+(
+    std::size_t capacity
+):
+    buffer_(std::span<char>(new char[capacity], capacity)), 
+    deleteHandler_([](auto const & packet){delete [] packet.data();}),
+    size_(0),
+    begin_(0)
+{
+}
 
 
 //=============================================================================
@@ -216,7 +233,7 @@ inline auto bcpp::network::packet::end
 //=============================================================================
 inline auto bcpp::network::packet::data
 (
-) const
+) const -> element_type const *
 {
     return buffer_.data();
 }
@@ -225,7 +242,7 @@ inline auto bcpp::network::packet::data
 //=============================================================================
 inline auto bcpp::network::packet::data
 (
-)
+) -> element_type *
 {
     return buffer_.data();
 }

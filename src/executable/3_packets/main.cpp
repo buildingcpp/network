@@ -95,7 +95,7 @@ namespace example_2
                     auto const & packet
                 )
                 {
-                    auto bufferIndex = std::distance(pool.data(), packet.data());
+                    auto bufferIndex = (packet.data() - pool.data());
                     std::cout << "Returing buffer " << bufferIndex << " to pool\n";
                     avail.push_back(bufferIndex);
                 };

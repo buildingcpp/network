@@ -19,7 +19,6 @@ add_library(network
 
 target_link_libraries(network 
 PUBLIC
-    include
     system
     work_contract
     )

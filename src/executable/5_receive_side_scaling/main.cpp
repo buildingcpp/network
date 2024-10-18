@@ -35,6 +35,7 @@ namespace
     {
         bcpp::network::packet packet({[](auto const & p){delete [] p.data();}}, std::span(new char[message.size()], message.size()));
         std::copy_n(message.data(), message.size(), packet.data());
+        packet.resize(message.size());
         return packet; 
     }
 

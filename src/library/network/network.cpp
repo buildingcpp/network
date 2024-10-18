@@ -38,18 +38,20 @@ auto bcpp::network::get_available_network_interfaces
         auto cur = interfaceAddress;
         while (cur != nullptr)
         {
-            if (cur->ifa_addr->sa_family == AF_INET)
+            if ((cur->ifa_addr) && (cur->ifa_addr->sa_family == AF_INET))
             {
                 interfaces.push_back(
                         {
                             .name_ = cur->ifa_name,
                             .ipAddress_ = {((struct sockaddr_in *)(cur->ifa_addr))->sin_addr},
                             .netmask_ = {((struct sockaddr_in *)(cur->ifa_netmask))->sin_addr},
+                            .broadcastAddress_ = {((struct sockaddr_in *)(cur->ifa_ifu.ifu_broadaddr))->sin_addr},
                             .up_ = (((cur->ifa_flags) & IFF_UP) == IFF_UP),
                             .loopback_ = (((cur->ifa_flags) & IFF_LOOPBACK) == IFF_LOOPBACK),
                             .broadcast_ = (((cur->ifa_flags) & IFF_BROADCAST) == IFF_BROADCAST),
                             .multicast_ = (((cur->ifa_flags) & IFF_MULTICAST) == IFF_MULTICAST),
-                            .running_ = (((cur->ifa_flags) & IFF_RUNNING) == IFF_RUNNING)
+                            .running_ = (((cur->ifa_flags) & IFF_RUNNING) == IFF_RUNNING),
+                            .pointToPoint_ = (((cur->ifa_flags) & IFF_POINTOPOINT) == IFF_POINTOPOINT)
                         });
             }
             cur = cur->ifa_next;

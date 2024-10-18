@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./buffer_heap.h"
 #include <include/non_copyable.h>
 
 #include <span>
@@ -16,14 +17,8 @@ namespace bcpp::network
     public:
 
         using element_type = char;
-        using delete_handler = void(*)(packet const &);
 
-        struct event_handlers
-        {
-            delete_handler deleteHandler_;
-        };
-
-        packet(){}
+        packet() = default;
 
         packet
         ( 
@@ -32,12 +27,11 @@ namespace bcpp::network
 
         packet
         ( 
-            std::span<element_type const>
+            buffer_heap &
         );
 
         packet
         (
-            event_handlers const &, 
             std::span<element_type>
         );
 
@@ -87,24 +81,24 @@ namespace bcpp::network
 
     private:
 
+        #pragma pack(push, 1)
+        struct alignas(64) packet_header
+        {
+            buffer_heap * volatile heap_{nullptr};
+        };
+        #pragma pack(pop)
+
         void release();
 
         std::span<element_type>  buffer_;
-
-        delete_handler           deleteHandler_{nullptr};
 
         std::size_t              size_{0};
 
         std::size_t              begin_{0};
 
+        bool                     ownsData_{false};
+
     };
-
-
-    namespace literals
-    {
-        [[maybe_unused]]
-        static packet operator""_packet(char const * addr, std::size_t len){return packet({addr, len});}
-    }
 
 } // namespace bcpp::network
 
@@ -112,26 +106,60 @@ namespace bcpp::network
 //=============================================================================
 inline bcpp::network::packet::packet
 (
+    // create a packet with process memory
     std::size_t capacity
 ):
-    buffer_(std::span<char>(new char[capacity], capacity)), 
-    deleteHandler_([](auto const & packet){delete [] packet.data();}),
-    size_(0),
-    begin_(0)
+    buffer_(new char[capacity + sizeof(packet_header)], capacity + sizeof(packet_header))
 {
+    if (!buffer_.empty())
+    {
+        size_ = 0;
+        begin_ = sizeof(packet_header);
+        ownsData_ = true;
+        new (buffer_.data()) packet_header;
+    }
 }
 
 
 //=============================================================================
 inline bcpp::network::packet::packet
 (
-    event_handlers const & eventHandler, 
+    // create a packet with allocator
+    buffer_heap & bufferHeap
+):
+    buffer_(bufferHeap.pop())
+{
+    if (!buffer_.empty())
+    {
+        size_ = 0;
+        begin_ = sizeof(packet_header);
+        ownsData_ = true;
+        new (buffer_.data()) packet_header(&bufferHeap);
+    }
+    else
+    {
+        auto capacity = buffer_heap::buffer_capacity;
+        buffer_ = std::span<char>(new char[capacity], capacity);
+        if (!buffer_.empty())
+        {
+            size_ = 0;
+            begin_ = sizeof(packet_header);
+            ownsData_ = true;
+            new (buffer_.data()) packet_header;
+        }
+    }
+}
+
+
+//=============================================================================
+inline bcpp::network::packet::packet
+(
     std::span<element_type> buffer
 ):
     buffer_(buffer), 
-    deleteHandler_(eventHandler.deleteHandler_),
     size_(buffer.size()),
-    begin_(0)
+    begin_(0),
+    ownsData_(false)
 {
 }
 
@@ -142,14 +170,14 @@ inline bcpp::network::packet::packet
     packet && other
 ):
     buffer_(other.buffer_),
-    deleteHandler_(other.deleteHandler_),
     size_(other.size_),
-    begin_(other.begin_)
+    begin_(other.begin_),
+    ownsData_(other.ownsData_)
 {
-    other.deleteHandler_ = nullptr;
     other.size_ = {};
     other.buffer_ = {};
     other.begin_ = {};
+    other.ownsData_ = {};
 }
 
 
@@ -163,14 +191,14 @@ inline auto bcpp::network::packet::operator =
     {
         release();
         buffer_ = other.buffer_;
-        deleteHandler_ = other.deleteHandler_;
         size_ = other.size_;
         begin_ = other.begin_;
+        ownsData_ = other.ownsData_;
 
-        other.deleteHandler_ = nullptr;
         other.size_ = {};
         other.buffer_ = {};
         other.begin_ = {};
+        other.ownsData_ = {};
     }
     return *this;
 }
@@ -190,7 +218,7 @@ inline auto bcpp::network::packet::capacity
 (
 ) const
 {
-    return buffer_.size();
+    return (buffer_.size() - ((ownsData_) ? sizeof(packet_header) : 0));
 }
 
 
@@ -235,7 +263,7 @@ inline auto bcpp::network::packet::data
 (
 ) const -> element_type const *
 {
-    return buffer_.data();
+    return (buffer_.data() + ((ownsData_) ? sizeof(packet_header) : 0));
 }
 
 
@@ -244,7 +272,7 @@ inline auto bcpp::network::packet::data
 (
 ) -> element_type *
 {
-    return buffer_.data();
+    return (buffer_.data() + ((ownsData_) ? sizeof(packet_header) : 0));
 }
 
 
@@ -298,11 +326,25 @@ inline void bcpp::network::packet::release
 (
 )
 {
-    if (deleteHandler_)
-        std::exchange(deleteHandler_, nullptr)(*this);
+    if (ownsData_ == true)
+    {
+        auto & packetHeader = *reinterpret_cast<packet_header *>(buffer_.data());
+        if (packetHeader.heap_ != nullptr)
+        {
+            // was allocated from heap
+            packetHeader.heap_->push(buffer_);
+            packetHeader.heap_ = nullptr;
+        }
+        else
+        {
+            // was allocated from process memory
+            delete [] buffer_.data();
+        }
+    }
     size_ = {};
     buffer_ = {};
     begin_ = {};
+    ownsData_ = {};
 }
 
 
@@ -321,22 +363,4 @@ inline bcpp::network::packet::operator std::span<element_type const>
 ) const
 {
     return {begin(), size_};
-}
-
-
-//=============================================================================
-inline bcpp::network::packet::packet
-(
-    // because socket sends are async sending a plain old c string
-    // requires an allocation and a memcpy.
-    // for more optimal performance use an allocator and place messages
-    // in pre allocated buffers and then use the other packet ctor.
-    std::span<element_type const> message
-):
-    buffer_(new char[message.size()], message.size()), 
-    deleteHandler_([](auto const & p){delete [] p.data();}),
-    size_(message.size()),
-    begin_(0)
-{
-    std::copy_n(message.data(), message.size(), buffer_.data());
 }

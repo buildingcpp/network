@@ -35,10 +35,9 @@ struct client :
             std::cout << "client: established connection with server at " << socket_.get_peer_socket_address() << "\n";
     }
 
-    void send(std::span<char const> data)
+    void send(bcpp::network::packet packet)
     {
-        bcpp::network::packet p(data);
-        socket_.send(std::move(p));
+        socket_.send(std::move(packet));
     }
 
     bcpp::network::virtual_network_interface    networkInterface_;

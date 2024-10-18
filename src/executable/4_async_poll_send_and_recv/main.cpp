@@ -34,8 +34,9 @@ namespace
         std::string_view message
     ) -> bcpp::network::packet
     {
-        bcpp::network::packet packet({[](auto const & p){delete [] p.data();}}, std::span(new char[message.size()], message.size()));
+        bcpp::network::packet packet(message.size());
         std::copy_n(message.data(), message.size(), packet.data());
+        packet.resize(message.size());
         return packet; 
     }
 

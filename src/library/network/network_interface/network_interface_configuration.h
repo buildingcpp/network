@@ -12,11 +12,13 @@ namespace bcpp::network
         network_interface_name      name_;
         ip_address                  ipAddress_;
         ip_address                  netmask_;
+        ip_address                  broadcastAddress_;
         bool                        up_;
         bool                        loopback_;
         bool                        broadcast_;
         bool                        multicast_;
-        bool                        running_;                 
+        bool                        running_;  
+        bool                        pointToPoint_;               
     };
 
 }

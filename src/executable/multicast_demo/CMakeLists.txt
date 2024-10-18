@@ -1,5 +1,7 @@
 add_executable(multicast_demo main.cpp)
 
+target_link_directories(multicast_demo PUBLIC ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+
 target_link_libraries(multicast_demo 
 PRIVATE
     network

@@ -52,6 +52,8 @@ int main
             {.function_ = [&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets();}}
         });
 
+        bcpp::network::buffer_heap bufferHeap({.capacity_ = 1 << 20});
+
         // set up multicast receiver sockets
         static auto constexpr number_of_receivers = 10;
         std::array<bcpp::network::udp_socket, number_of_receivers> receivers;
@@ -81,14 +83,13 @@ int main
                                         print(std::format("receiver #{} got multicast packet - data = {}", id, std::string_view(packet.data(), packet.size())));
                                     expected = received + 1;
                                 },
-                        .packetAllocationHandler_ = []
+                        .packetAllocationHandler_ = [&]
                                 (
                                     bcpp::network::socket_id, 
-                                    std::size_t capacity
+                                    std::size_t
                                 )
                                 {
-                                    // new/delete here are overkill but demonstrate where an allocator would fit in
-                                    return bcpp::network::packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, std::span(new char[capacity], capacity));
+                                    return bcpp::network::packet(bufferHeap);
                                 }
                     });
         }
@@ -96,12 +97,15 @@ int main
         // set up multicast sender socket and then send messages
         auto sender = networkInterface.create_udp_socket({}, {});
         sender.connect_to(multicastChannel);
-        for (auto i = 0; i < 1000000; ++i)
+        for (auto i = 0; i < 1000; ++i)
         {
-            bcpp::network::packet p(std::format("{}\0", i));
-            while (!sender.send(std::move(p)))
+            auto message = std::format("{}", i);
+            bcpp::network::packet packet(bufferHeap);
+            std::copy_n(message.data(), message.size(), packet.data());
+            packet.resize(message.size());
+
+            while (!sender.send(std::move(packet)))
                 ;
-          //  std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         // demo is async so give it a moment to complete

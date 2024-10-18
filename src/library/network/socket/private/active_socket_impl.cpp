@@ -36,7 +36,7 @@ bcpp::network::active_socket_impl<P>::socket_impl
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
+            [](auto, auto size){return packet(size);}),
     sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
     sendContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {
@@ -79,7 +79,7 @@ bcpp::network::active_socket_impl<P>::socket_impl
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
             eventHandlers.packetAllocationHandler_ : 
-            [](auto, auto size){return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {new char[size], size});}),
+            [](auto, auto size){return packet(size);}),
     sendQueue_(config.sendQueueSize_ ? config.sendQueueSize_ : configuration::default_send_queue_capacity),
     sendContract_(sendWorkContractGroup.create_contract([this](){this->execute_next_send();}, [this](){this->destroy();}))
 {

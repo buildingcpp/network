@@ -52,7 +52,7 @@ To remove `239.0.0.1`: (in my case from interface `wlp5s0`)
 
 Virtual network interfaces are the foundation for every other component of this networking library.  A virtual network interface is associated with any one specific physical network interface and is 'virtual' because it is possible to create multiple virtual network interfaces, each of which is associated with the same underlying physical network interface.
 
-Virtual network interfaces provide the ability to create sockets and to poll those sockets.  All sockets created by an instance of a virtual network interface are associated exclusively with that instance and polling a virtual network interface instance will only poll for those specific sockets.
+Virtual network interfaces provide the ability to create sockets and to poll those sockets.  All sockets which created by an instance of a virtual network interface are associated exclusively with that instance.  Polling a virtual network interface instance will only poll for those specific sockets.
 
 Examples of creating virtual network interfaces:
 

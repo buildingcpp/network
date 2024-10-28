@@ -4,6 +4,7 @@
 #include <include/non_movable.h>
 #include <include/bit.h>
 #include <library/system.h>
+#include <library/system/memory/anonymous_mapping.h>
  
 #include <span>
 #include <cstdint>
@@ -54,7 +55,7 @@ namespace bcpp::network
  
         static auto constexpr invalid_buffer_index{-1};
  
-        system::shared_memory                               allocation_;
+        system::anonymous_mapping                           allocation_;
         char *                                              allocationBegin_;
         char *                                              allocationEnd_;
  
@@ -77,13 +78,10 @@ inline bcpp::network::buffer_heap::buffer_heap
 {
     auto capacity = minimum_power_of_two(config.capacity_);
     capacityMask_ = (capacity - 1);
-    allocation_ = allocation_.create({
-            .path_ = "",
+    allocation_ = std::move(system::anonymous_mapping({
             .size_ = (buffer_capacity * capacity),
-            .ioMode_ = system::io_mode::read_write,
-            .mmapFlags_ = config.mmapFlags_,
-            .unlinkPolicy_ = system::shared_memory::unlink_policy::on_attach},
-            {});
+            .mmapFlags_ = MAP_HUGETLB | (21 << MAP_HUGE_SHIFT)},
+            {}));
     allocationBegin_ = reinterpret_cast<char *>(allocation_.data());
     allocationEnd_ = (allocationBegin_ != nullptr) ? (allocationBegin_ + capacity) : nullptr;
     queue_ = std::move(std::make_unique<buffer_index volatile []>(capacity));

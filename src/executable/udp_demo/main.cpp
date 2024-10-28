@@ -49,17 +49,6 @@ int main
             {.function_ = [&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets(1s);}} // one socket reader thread
         });
 
-        auto create_packet = []
-                (
-                    std::string_view message
-                )
-                {
-                    bcpp::network::packet packet(message.size());
-                    std::copy_n(message.data(), message.size(), packet.data());
-                    packet.resize(message.size());
-                    return packet; 
-                };
-
         // create a standard (connectionless) UDP socket
         auto socket1 = networkInterface.create_udp_socket({/*default configuration for this demo*/}, 
                 {.receiveHandler_ = [](auto socketId, auto packet, auto senderSocketAddress){std::cout << "udp socket [id = " << socketId << "] received message from " << senderSocketAddress <<
@@ -79,10 +68,12 @@ int main
                             }
                 });
         socket2.connect_to(socket1.get_socket_address());
-        //auto packet1 = create_packet("guess what!");
-        socket2.send(create_packet("guess what!"));
-        //auto packet2 = create_packet("chicken butt!!");
-        socket1.send_to(socket2.get_socket_address(), create_packet("chicken butt!!"));
+        auto packet1 = bcpp::network::packet::create(64);
+        packet1.set_content("guess what?");
+        socket2.send(std::move(packet1));
+        auto packet2 = bcpp::network::packet::create(64);
+        packet2.set_content("chicken butt!!");
+        socket1.send_to(socket2.get_socket_address(), std::move(packet2));
 
         // since demo is async we wait for the messages to be processed
         std::this_thread::sleep_for(100ms);

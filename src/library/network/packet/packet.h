@@ -6,6 +6,8 @@
 #include <span>
 #include <cstdint>
 #include <utility>
+#include <string>
+#include <concepts>
 
 
 namespace bcpp::network
@@ -20,9 +22,11 @@ namespace bcpp::network
 
         packet() = default;
 
-        packet
+        static packet create(std::size_t);
+
+        explicit packet
         ( 
-            std::size_t
+            std::integral auto
         );
 
         packet
@@ -32,7 +36,7 @@ namespace bcpp::network
 
         packet
         (
-            std::span<element_type>
+            std::span<element_type> const
         );
 
         packet
@@ -79,6 +83,11 @@ namespace bcpp::network
 
         operator bool() const;
 
+        bool set_content
+        (
+            std::span<element_type const> 
+        );
+
     private:
 
         #pragma pack(push, 1)
@@ -104,10 +113,20 @@ namespace bcpp::network
 
 
 //=============================================================================
+inline auto bcpp::network::packet::create
+(
+    std::size_t capacity
+) -> packet
+{
+    return packet(capacity);
+}
+
+
+//=============================================================================
 inline bcpp::network::packet::packet
 (
     // create a packet with process memory
-    std::size_t capacity
+    std::integral auto capacity
 ):
     buffer_(new char[capacity + sizeof(packet_header)], capacity + sizeof(packet_header))
 {
@@ -154,7 +173,7 @@ inline bcpp::network::packet::packet
 //=============================================================================
 inline bcpp::network::packet::packet
 (
-    std::span<element_type> buffer
+    std::span<element_type> const buffer
 ):
     buffer_(buffer), 
     size_(buffer.size()),
@@ -363,4 +382,19 @@ inline bcpp::network::packet::operator std::span<element_type const>
 ) const
 {
     return {begin(), size_};
+}
+
+
+//=============================================================================
+inline bool bcpp::network::packet::set_content
+(
+    std::span<element_type const> input
+)
+{
+    if (capacity() < input.size())
+        return false;
+    begin_ = sizeof(packet_header);
+    std::copy_n(input.data(), input.size(), data());
+    size_ = input.size();
+    return true;
 }

@@ -11,7 +11,7 @@ bcpp::network::socket_address::socket_address
 )
 {
     auto iter = std::find(value.begin(), value.end(), ':');
-    ipAddress_ = value.subspan(std::distance(value.begin(), iter));
+    ipAddress_ = value.subspan(0, std::distance(value.begin(), iter));
     portId_ = std::string((iter < value.end()) ? iter + 1 : iter, value.end());
 }
 

@@ -93,7 +93,7 @@ int main
                                 }
                     });
         }
-/*
+
         // set up multicast sender socket and then send messages
         auto sender = networkInterface.create_udp_socket({}, {});
         sender.connect_to(multicastChannel);
@@ -107,9 +107,9 @@ int main
             while (!sender.send(std::move(packet)))
                 ;
         }
-*/
+
         // demo is async so give it a moment to complete
-        std::this_thread::sleep_for(100000s); 
+        std::this_thread::sleep_for(1s); 
 
         threadPool.stop();
         networkInterface.stop();

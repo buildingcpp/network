@@ -82,6 +82,8 @@ void bcpp::network::poller::poll
 )
 {
     static thread_local std::array<::epoll_event, 1024> epollEvents;
+    
+    std::lock_guard lockGuard(atomicSpinLock_);
     for (auto const & event : std::span(epollEvents.data(), ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), duration.count())))
     {
         auto impl = reinterpret_cast<socket_base_impl *>(event.data.ptr);

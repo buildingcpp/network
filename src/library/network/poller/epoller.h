@@ -4,6 +4,7 @@
 
 #include "./poller.h"
 
+#include <include/atomic_spin_lock.h>
 #include <include/non_movable.h>
 #include <include/non_copyable.h>
 #include <include/file_descriptor.h>
@@ -65,6 +66,8 @@ namespace bcpp::network
         );
 
         system::file_descriptor fileDescriptor_;
+    
+        atomic_spin_lock        atomicSpinLock_;
 
     }; // class poller
 
@@ -95,5 +98,6 @@ inline bool bcpp::network::poller::unregister_socket
     socket_impl_concept auto & socket
 )
 {
+    std::lock_guard lockGuard(atomicSpinLock_);
     return (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, socket.get_file_descriptor().get(), nullptr) == 0);
 }

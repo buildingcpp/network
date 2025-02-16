@@ -14,6 +14,7 @@
 #include <functional>
 #include <type_traits>
 #include <span>
+#include <optional>
 
 
 namespace bcpp::network
@@ -74,20 +75,17 @@ namespace bcpp::network
 
         socket_id get_id() const;
         
-        template <typename V>
-        std::int32_t get_socket_option
+        std::optional<std::int32_t> get_socket_option
         (
             std::int32_t,
-            std::int32_t,
-            V &
+            std::int32_t
         ) const noexcept;
 
-        template <typename V>
-        std::int32_t set_socket_option
+        bool set_socket_option
         (
             std::int32_t,
             std::int32_t,
-            V
+            std::int32_t
         ) noexcept;
 
     private:

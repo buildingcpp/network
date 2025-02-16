@@ -49,14 +49,13 @@ void bcpp::network::passive_socket_impl::destroy
 {
     if (receiveContract_.is_valid())
     {
+        // remove this socket from the poller
+        if (auto poller = poller_.lock(); poller)
+            poller->unregister_socket(*this);
         receiveContract_.release();
     }
     else
     {
-        // remove this socket from the poller before deleting 
-        // 'this' as the poller has a raw pointer to 'this'.
-        if (auto poller = poller_.lock(); poller)
-            poller->unregister_socket(*this);
         delete this;
     }
 }

@@ -28,7 +28,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
     receiveContract_(std::move(workContract))
 {
-    if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
+    if (not set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
         throw std::runtime_error("reuse address failure");
     if (!socketAddress.is_multicast())
     {
@@ -63,7 +63,7 @@ bcpp::network::socket_base_impl::socket_base_impl
     pollErrorHandler_(eventHandlers.pollErrorHandler_),
     receiveContract_(std::move(workContract))
 {
-    if (set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1) != 0)
+    if (not set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
         throw std::runtime_error("reuse address failure");
     if (auto success = set_synchronicity(synchronization_mode::non_blocking); !success)
         throw std::runtime_error("set non_blocking failure");
@@ -88,6 +88,20 @@ bcpp::network::socket_base_impl::~socket_base_impl
 )
 {
     close();
+}
+
+
+//=============================================================================
+std::optional<std::int32_t> bcpp::network::socket_base_impl::get_socket_option
+(
+    std::int32_t level,
+    std::int32_t optionName
+) const noexcept
+{
+    std::int32_t result = 0;
+    if (::setsockopt(fileDescriptor_.get(), level, optionName, &result, sizeof(result)) == 0)
+        return {result};
+    return {};
 }
 
 

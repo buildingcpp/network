@@ -59,6 +59,6 @@ namespace bcpp::network
 
     using passive_socket_impl = socket_impl<tcp_listener_socket_traits>;
 
-    using tcp_listener_socket_impl = passive_socket_impl;
+    using tcp_listener_socket_impl = socket_impl<tcp_listener_socket_traits>;
 
 } // namespace bcpp::network

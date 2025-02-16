@@ -140,7 +140,7 @@ auto bcpp::network::active_socket_impl<P>::join
     ::memset(&mreq, 0x00, sizeof(mreq));
     mreq.imr_multiaddr = ipAddress;
     mreq.imr_interface = in_addr_any;
-    if (!set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
+    if (not set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
     {
         // TODO: log failure
         return connect_result::connect_error;
@@ -169,7 +169,7 @@ bool bcpp::network::active_socket_impl<P>::disconnect
             ::memset(&mreq, 0x00, sizeof(mreq));
             mreq.imr_multiaddr = peerSocketAddress_.get_ip_address();
             mreq.imr_interface = in_addr_any;
-            if (!set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
+            if (not set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
             {
                 // TODO: log failure
                 return false;
@@ -403,6 +403,10 @@ void bcpp::network::active_socket_impl<P>::destroy
 {
     if (receiveContract_.is_valid())
     {
+        // remove this socket from the poller 
+        disconnect();
+        if (auto poller = poller_.lock(); poller)
+            poller->unregister_socket(*this);        
         receiveContract_.release();
     }    
     else
@@ -413,11 +417,7 @@ void bcpp::network::active_socket_impl<P>::destroy
         }
         else
         {
-            // remove this socket from the poller before deleting 
-            // 'this' as the poller has a raw pointer to 'this'.
-            disconnect();
-            if (auto poller = poller_.lock(); poller)
-                poller->unregister_socket(*this);
+
             delete this;
         }
     }

@@ -25,7 +25,7 @@ int main
         bcpp::network::packet packet(sizeof(message));
         std::copy_n(message.data(), message.size(), packet.data());
         packet.resize(message.size());
-        while (!echoClient.send(packet));
+        while (!echoClient.send(std::move(packet)));
     }
 
     std::this_thread::sleep_for(1s); // demo is async so give it a moment to complete

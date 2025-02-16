@@ -317,29 +317,27 @@ bool bcpp::network::active_socket<P>::set_io_mode
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
-template <typename V>
-std::int32_t bcpp::network::active_socket<P>::get_socket_option
+std::optional<std::int32_t> bcpp::network::active_socket<P>::get_socket_option
 (
     std::int32_t level,
-    std::int32_t optionName,
-    V & value
+    std::int32_t optionName
 ) const noexcept
 {
-    return (impl_) ? impl_->get_socket_option(level, optionName, value) : -1;
+    return (impl_) ? impl_->get_socket_option(level, optionName) : std::nullopt;
 }
 
 
 //=============================================================================
 template <bcpp::network::network_transport_protocol P>
 template <typename V>
-std::int32_t bcpp::network::active_socket<P>::set_socket_option
+bool bcpp::network::active_socket<P>::set_socket_option
 (
     std::int32_t level,
     std::int32_t optionName,
-    V value
+    std::int32_t value
 ) noexcept
 {
-    return (impl_) ? impl_->set_socket_option(level, optionName, value) : -1;
+    return (impl_) ? impl_->set_socket_option(level, optionName, value) : false;
 }
 
 
@@ -348,10 +346,4 @@ namespace bcpp::network
 {
     template class socket<tcp_socket_traits>;
     template class socket<udp_socket_traits>;
-
-    template std::int32_t socket<tcp_socket_traits>::set_socket_option(std::int32_t, std::int32_t, std::int32_t);
-    template std::int32_t socket<tcp_socket_traits>::get_socket_option(std::int32_t, std::int32_t, std::int32_t &) const;
-
-    template std::int32_t socket<udp_socket_traits>::set_socket_option(std::int32_t, std::int32_t, std::int32_t);
-    template std::int32_t socket<udp_socket_traits>::get_socket_option(std::int32_t, std::int32_t, std::int32_t &) const;
 }

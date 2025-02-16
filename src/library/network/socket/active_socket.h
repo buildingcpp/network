@@ -20,6 +20,7 @@
 #include <span>
 #include <tuple>
 #include <cstdint>
+#include <optional>
 
 
 namespace bcpp::network
@@ -163,20 +164,18 @@ namespace bcpp::network
             system::io_mode
         ) noexcept;
        
-        template <typename V>
-        std::int32_t get_socket_option
+        std::optional<std::int32_t> get_socket_option
         (
             std::int32_t,
-            std::int32_t,
-            V &
+            std::int32_t
         ) const noexcept;
 
         template <typename V>
-        std::int32_t set_socket_option
+        bool set_socket_option
         (
             std::int32_t,
             std::int32_t,
-            V
+            std::int32_t
         ) noexcept;
 
     private:

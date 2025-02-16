@@ -27,10 +27,9 @@ struct echo_client : bcpp::non_movable, bcpp::non_copyable
         pollerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.poll();}),
         workerThread_([this](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface_.service_sockets();}){}
 
-    bool send(std::span<char> const data)
+    bool send(bcpp::network::packet packet)
     {
-        bcpp::network::packet p(data);
-        return socket_.send(std::move(p));
+        return socket_.send(std::move(packet));
     }
 
     bcpp::network::virtual_network_interface    networkInterface_;

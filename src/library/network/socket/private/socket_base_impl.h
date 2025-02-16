@@ -15,6 +15,7 @@
 #include <include/non_movable.h>
 
 #include <functional>
+#include <optional>
 
 
 namespace bcpp::network
@@ -84,19 +85,17 @@ namespace bcpp::network
         ) noexcept;
 
         template <typename V>
-        std::int32_t set_socket_option
+        bool set_socket_option
         (
             std::int32_t,
             std::int32_t,
             V
         ) noexcept;
        
-        template <typename V>
-        std::int32_t get_socket_option
+        std::optional<std::int32_t> get_socket_option
         (
             std::int32_t,
-            std::int32_t,
-            V &
+            std::int32_t
         ) const noexcept;
 
     protected:
@@ -135,7 +134,7 @@ namespace bcpp::network
 
         event_handlers::poll_error_handler  pollErrorHandler_;
 
-        work_contract                  receiveContract_;
+        work_contract                       receiveContract_;
 
     }; // class socket_base_impl
 
@@ -144,25 +143,12 @@ namespace bcpp::network
 
 //=============================================================================
 template <typename V>
-std::int32_t bcpp::network::socket_base_impl::get_socket_option
-(
-    std::int32_t level,
-    std::int32_t optionName,
-    V & value
-) const noexcept
-{
-    return ::setsockopt(fileDescriptor_.get(), level, optionName, &value, sizeof(value));
-}
-
-
-//=============================================================================
-template <typename V>
-std::int32_t bcpp::network::socket_base_impl::set_socket_option
+bool bcpp::network::socket_base_impl::set_socket_option
 (
     std::int32_t level,
     std::int32_t optionName,
     V value
 ) noexcept
 {
-    return ::setsockopt(fileDescriptor_.get(), level, optionName, &value, sizeof(value));
+    return (::setsockopt(fileDescriptor_.get(), level, optionName, &value, sizeof(value)) == 0);
 }

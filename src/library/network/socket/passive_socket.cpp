@@ -79,33 +79,23 @@ auto bcpp::network::passive_socket::get_id
 
 
 //=============================================================================
-template <typename V>
-std::int32_t bcpp::network::passive_socket::get_socket_option
+std::optional<std::int32_t> bcpp::network::passive_socket::get_socket_option
 (
     std::int32_t level,
-    std::int32_t optionName,
-    V & value
+    std::int32_t optionName
 ) const noexcept
 {
-    return (impl_) ? impl_->get_socket_option(level, optionName, value) : -1;
+    return (impl_) ? impl_->get_socket_option(level, optionName) : std::nullopt;
 }
 
 
 //=============================================================================
-template <typename V>
-std::int32_t bcpp::network::passive_socket::set_socket_option
+bool bcpp::network::socket<bcpp::network::tcp_listener_socket_traits>::set_socket_option
 (
     std::int32_t level,
     std::int32_t optionName,
-    V value
+    std::int32_t value
 ) noexcept
 {
-    return (impl_) ? impl_->set_socket_option(level, optionName, value) : -1;
-}
-
-
-namespace bcpp::network
-{
-    template std::int32_t passive_socket::set_socket_option(std::int32_t, std::int32_t, std::int32_t);
-    template std::int32_t passive_socket::get_socket_option(std::int32_t, std::int32_t, std::int32_t &) const;
+    return (impl_) ? impl_->set_socket_option(level, optionName, value) : false;
 }
